@@ -91,11 +91,6 @@ week-02-express_intro/
 │   ├── pnpm-lock.yaml
 │   └── tsconfig.json
 │
-├── 4-recursos/
-│   ├── ebook-free/
-│   ├── videografia/
-│   └── webgrafia/
-│
 ├── 5-glosario/
 │   └── README.md
 │

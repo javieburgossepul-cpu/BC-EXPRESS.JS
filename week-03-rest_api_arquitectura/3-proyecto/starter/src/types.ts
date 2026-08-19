@@ -1,31 +1,23 @@
-// ============================================
-// TYPES — Adapta estos tipos a tu dominio
-// ============================================
-// NOTA: Renombra "Item" por el recurso de tu dominio.
-// Ejemplos: Book, Medicine, Member, Dish, Patient, Movie...
-//
-// Agrega o quita campos según las características de tu dominio.
-
-// TODO: Renombra Item y ajusta los campos a tu dominio asignado
 export interface Item {
   id: number;
-  name: string;        // Renombra o elimina según tu dominio
-  description: string; // Ej: price, dosage, plan, genre...
-  active: boolean;     // Ej: available, inStock, published...
-  createdAt: string;
+  titulo: string;
+  artista: string;
+  año: number;
+  sala: string;
 }
 
-// DTO para crear — sin campos auto-generados
-export type CreateItemDto = Omit<Item, 'id' | 'createdAt'>;
+// DTO para crear una obra
+export type CreateItemDto = Omit<Item, 'id'>;
 
-// DTO para actualizar — todos los campos opcionales
+// DTO para actualizar una obra
 export type UpdateItemDto = Partial<CreateItemDto>;
 
-// Contratos de respuesta (no cambiar nombres — son genéricos)
+// Respuesta para un solo elemento
 export interface SingleResponse<T> {
   data: T;
 }
 
+// Respuesta para listas con paginación
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;
@@ -33,11 +25,13 @@ export interface PaginatedResponse<T> {
   limit: number;
 }
 
+// Respuesta para errores
 export interface ErrorResponse {
   error: string;
   message: string;
 }
 
+// Parámetros de paginación
 export interface PaginationParams {
   page: number;
   limit: number;

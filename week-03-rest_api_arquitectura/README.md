@@ -1,80 +1,273 @@
-# Semana 03 — REST API Arquitectura en Capas
+# Proyecto Semana 03 — API REST de Obras de Arte
 
-## 🎯 Objetivos de la Semana
+## Descripción
 
-Al finalizar esta semana, serás capaz de:
+Este proyecto consiste en una API REST desarrollada con Express y TypeScript para gestionar obras de arte de un museo.
 
-- Organizar un proyecto Express en capas: `routes → controllers → services → repositories`
-- Separar responsabilidades: qué hace cada capa y por qué
-- Diseñar contratos de API REST coherentes (rutas, verbos, status codes)
-- Crear DTOs (Data Transfer Objects) tipados con TypeScript
-- Estructurar respuestas JSON consistentes (data wrapper, paginación, errores)
-- Aplicar el principio de capas delgadas (thin controllers, logic in services)
+En esta semana se tomó como base el proyecto de la Semana 02 y se organizó utilizando una arquitectura en capas. Esto permite separar las responsabilidades del proyecto y mantener el código más ordenado.
 
-## 📋 Prerrequisitos
+La API utiliza un almacenamiento temporal en memoria y permite realizar operaciones CRUD sobre las obras de arte.
 
-- Semanas 01 y 02 completadas (Node.js, TypeScript, Express 5, middleware)
-- Conocer cómo crear rutas y leer `req.body`, `req.params`, `req.query`
-- Entender qué es un middleware y el error handler de Express
+## Dominio
 
-## 🗂️ Estructura de la Semana
+**Museo**
 
+### Recurso principal
+
+**Obra de arte**
+
+Cada obra contiene:
+
+* `id`: identificador de la obra.
+* `titulo`: título de la obra.
+* `artista`: nombre del artista.
+* `año`: año de creación.
+* `sala`: sala donde se encuentra la obra.
+
+## Arquitectura del proyecto
+
+El proyecto está organizado en cuatro capas principales:
+
+```text
+Routes
+   ↓
+Controllers
+   ↓
+Services
+   ↓
+Repositories
+   ↓
+Datos en memoria
 ```
+
+### Routes
+
+Se encargan de definir las rutas y los métodos HTTP disponibles en la API.
+
+### Controllers
+
+Reciben las peticiones, obtienen los datos necesarios y envían la respuesta al cliente.
+
+### Services
+
+Contienen la lógica de la aplicación, como la paginación y la comunicación con el repository.
+
+### Repositories
+
+Se encargan de manejar los datos almacenados en memoria, incluyendo las operaciones de crear, consultar, actualizar y eliminar.
+
+## Tecnologías utilizadas
+
+* Node.js
+* Express 5
+* TypeScript
+* pnpm
+* Git
+* Git Bash
+
+## Endpoints
+
+| Método | Endpoint            | Descripción                        |
+| ------ | ------------------- | ---------------------------------- |
+| GET    | `/health`           | Comprobar que el servidor funciona |
+| GET    | `/api/v1/items`     | Consultar todas las obras          |
+| GET    | `/api/v1/items/:id` | Buscar una obra por ID             |
+| POST   | `/api/v1/items`     | Crear una nueva obra               |
+| PUT    | `/api/v1/items/:id` | Actualizar una obra                |
+| DELETE | `/api/v1/items/:id` | Eliminar una obra                  |
+
+## Paginación
+
+La API permite consultar las obras utilizando los parámetros `page` y `limit`.
+
+Ejemplo:
+
+```text
+GET /api/v1/items?page=1&limit=2
+```
+
+La respuesta incluye:
+
+* `data`: obras encontradas.
+* `total`: cantidad total de obras.
+* `page`: página consultada.
+* `limit`: cantidad de elementos por página.
+
+## Contratos de respuesta
+
+Las respuestas de la API utilizan una estructura organizada.
+
+Para consultar una obra:
+
+```json
+{
+  "data": {
+    "id": 1,
+    "titulo": "La Gioconda",
+    "artista": "Leonardo da Vinci",
+    "año": 1503,
+    "sala": "Sala 1"
+  }
+}
+```
+
+Para consultar varias obras:
+
+```json
+{
+  "data": [],
+  "total": 4,
+  "page": 1,
+  "limit": 10
+}
+```
+
+Para una obra que no existe:
+
+```json
+{
+  "error": "Not Found",
+  "message": "Obra no encontrada"
+}
+```
+
+## Pruebas del proyecto
+
+### 1. Comprobar el funcionamiento de la API
+
+En esta prueba comprobé que el servidor estuviera funcionando correctamente mediante el endpoint `/health`.
+
+<img src="./0-assets/prueba1.jpeg" alt="Prueba del health check" width="600">
+
+### 2. Consultar todas las obras
+
+En esta prueba consulté todas las obras almacenadas en la API. La respuesta muestra las obras junto con la información de paginación.
+
+<img src="./0-assets/prueba2.jpeg" alt="Prueba de consultar todas las obras" width="600">
+
+### 3. Buscar una obra por ID
+
+En esta prueba busqué una obra específica utilizando su número de ID.
+
+<img src="./0-assets/prueba3.jpeg" alt="Prueba de búsqueda por ID" width="600">
+
+### 4. Consultar un ID que no existe
+
+En esta prueba utilicé un ID que no estaba registrado para comprobar el manejo del error `404 Not Found`.
+
+<img src="./0-assets/prueba4.jpeg" alt="Prueba de error 404" width="600">
+
+### 5. Paginación
+
+En esta prueba utilicé los parámetros `page` y `limit` para consultar solamente una cantidad determinada de obras.
+
+<img src="./0-assets/prueba5.jpeg" alt="Prueba de paginación" width="600">
+
+### 6. Crear una nueva obra
+
+En esta prueba creé una nueva obra de arte enviando sus datos mediante una petición `POST`.
+
+<img src="./0-assets/prueba6.jpeg" alt="Prueba de creación de una obra" width="600">
+
+### 7. Actualizar una obra
+
+En esta prueba modifiqué la información de una obra que ya estaba registrada utilizando una petición `PUT`.
+
+<img src="./0-assets/prueba7.jpeg" alt="Prueba de actualización de una obra" width="600">
+
+### 8. Eliminar una obra
+
+En esta prueba eliminé una obra utilizando una petición `DELETE`. La API respondió con el código `204 No Content`.
+
+<img src="./0-assets/prueba8.jpeg" alt="Prueba de eliminación de una obra" width="600">
+
+### 9. Comprobar la eliminación
+
+Después de eliminar la obra, realicé nuevamente una consulta utilizando su ID. La API respondió con `404 Not Found`, comprobando que la obra había sido eliminada.
+
+<img src="./0-assets/prueba9.jpeg" alt="Prueba de comprobación de eliminación" width="600">
+
+## Estructura del proyecto
+
+```text
 week-03-rest_api_arquitectura/
+│
+├── 0-assets/
+│   ├── prueba1.jpeg
+│   ├── prueba2.jpeg
+│   ├── prueba3.jpeg
+│   ├── prueba4.jpeg
+│   ├── prueba5.jpeg
+│   ├── prueba6.jpeg
+│   ├── prueba7.jpeg
+│   ├── prueba8.jpeg
+│   └── prueba9.jpeg
+│
 ├── 1-teoria/
-│   ├── 01-arquitectura-capas.md   # Por qué separar en capas, diagrama
-│   ├── 02-rest-contratos.md       # REST, versioning, response contracts
-│   ├── 03-controllers-services.md # Thin controllers, business logic in services
-│   └── 04-repositories-dtos.md   # Repository pattern, DTOs, TypeScript types
+│   ├── 01-arquitectura-capas.md
+│   ├── 02-rest-contratos.md
+│   ├── 03-controllers-services.md
+│   └── 04-repositories-dtos.md
+│
 ├── 2-practicas/
-│   ├── ejercicio-01-refactor/     # Refactorizar app flat de semana 02 en capas
-│   └── ejercicio-02-contratos/    # Diseñar y validar contratos REST
+│   ├── ejercicio-01-refactor/
+│   └── ejercicio-02-contratos/
+│
 ├── 3-proyecto/
-│   └── starter/                   # API CRUD en memoria con arquitectura en capas
-└── 5-glosario/
-    └── README.md
+│   │
+│   └── starter/
+│       ├── src/
+│       │   ├── controllers/
+│       │   │   └── items.controller.ts
+│       │   │
+│       │   ├── repositories/
+│       │   │   └── items.repository.ts
+│       │   │
+│       │   ├── routes/
+│       │   │   └── items.routes.ts
+│       │   │
+│       │   ├── services/
+│       │   │   └── items.service.ts
+│       │   │
+│       │   ├── app.ts
+│       │   ├── server.ts
+│       │   └── types.ts
+│       │
+│       ├── package.json
+│       ├── pnpm-lock.yaml
+│       └── tsconfig.json
+
+├── 5-glosario/
+│   └── README.md
+│
+└── README.md
 ```
 
-## 📝 Contenidos
+## Resultado
 
-### Teoría
+El proyecto permite gestionar obras de arte mediante una API REST organizada en diferentes capas.
 
-| Archivo | Tema | Duración estimada |
-|---------|------|:-----------------:|
-| [01-arquitectura-capas.md](1-teoria/01-arquitectura-capas.md) | Arquitectura en capas y separación de responsabilidades | 35 min |
-| [02-rest-contratos.md](1-teoria/02-rest-contratos.md) | REST, versioning y contratos de respuesta | 30 min |
-| [03-controllers-services.md](1-teoria/03-controllers-services.md) | Controllers delgados y lógica en services | 30 min |
-| [04-repositories-dtos.md](1-teoria/04-repositories-dtos.md) | Repository pattern, DTOs y tipos TypeScript | 25 min |
+Durante el desarrollo se implementaron:
 
-### Prácticas
+* Arquitectura en capas.
+* Rutas REST.
+* Controllers delgados.
+* Services para la lógica de la aplicación.
+* Repository para manejar los datos.
+* DTOs utilizando TypeScript.
+* Respuestas JSON consistentes.
+* Paginación.
+* Manejo de errores `404`.
+* Operaciones CRUD completas.
 
-| Ejercicio | Concepto | Duración estimada |
-|-----------|----------|:-----------------:|
-| [ejercicio-01-refactor](2-practicas/ejercicio-01-refactor/) | Refactorizar app flat en arquitectura de capas | 60 min |
-| [ejercicio-02-contratos](2-practicas/ejercicio-02-contratos/) | Diseñar contratos REST con responses consistentes | 50 min |
+Los datos utilizados en el proyecto se almacenan temporalmente en memoria, por lo que no se utiliza una base de datos.
 
-### Proyecto
+## Conclusión
 
-[3-proyecto/README.md](3-proyecto/README.md) — API CRUD en memoria con arquitectura completa en 4 capas. Sin base de datos aún — los datos persisten en memoria. Aplica la separación `routes → controllers → services → repositories` con DTOs tipados.
+La Semana 03 permitió reorganizar la API de obras de arte realizada anteriormente y separar las responsabilidades de cada parte del proyecto.
 
-## ⏱️ Distribución del Tiempo (8 horas)
+Esta estructura facilita entender el funcionamiento de la API, realizar cambios y mantener el código organizado.
 
-| Actividad | Tiempo |
-|-----------|-------:|
-| Teoría (4 archivos) | 2 h |
-| Ejercicio 01 — Refactor en capas | 1 h |
-| Ejercicio 02 — Contratos REST | 50 min |
-| Proyecto semanal | 2.5 h |
-| Revisión y corrección | 40 min |
-| **Total** | **7 h** |
-
-## 📌 Entregables
-
-1. ✅ Ejercicio 01 funcionando: app de semana 02 refactorizada con capas separadas
-2. ✅ Ejercicio 02 funcionando: respuestas JSON con contrato consistente (data wrapper, paginación, errores)
-3. ✅ Proyecto entregado: API CRUD adaptada a tu dominio con arquitectura en 4 capas
-4. ✅ Screenshots de las peticiones con Thunder Client / Postman
-
-## 🔗 Navegación
+## Navegación
 
 ← [Semana 02 — Express Intro](../week-02-express_intro/README.md) | [Semana 04 — Validación y Error Handling](../week-04-validacion_error_handling/README.md) →

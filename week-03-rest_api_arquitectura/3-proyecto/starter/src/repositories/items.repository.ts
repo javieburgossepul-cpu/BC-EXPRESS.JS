@@ -1,58 +1,95 @@
 // ============================================
 // REPOSITORY — Capa de acceso a datos
 // ============================================
-// Reglas de esta capa:
-// - Único punto de acceso al store (array, DB, archivo)
-// - Todos los métodos deben ser async Promise<T>
-// - Retornar copias defensivas (no la referencia interna)
-// - Si no encuentra un elemento, retornar undefined
-//
-// TODO: Renombra "Item" por el modelo de tu dominio
-// TODO: Agrega datos iniciales coherentes con tu dominio
 
 import { Item, CreateItemDto, UpdateItemDto } from '../types';
 
-// TODO: Inicializa el store con 3-5 elementos de tu dominio
+// Datos iniciales del museo
 const store: Item[] = [
-  // Ejemplo — reemplaza con datos de tu dominio:
-  // { id: 1, name: 'Ejemplo 1', description: 'Descripcion', active: true, createdAt: new Date().toISOString() },
+  {
+    id: 1,
+    titulo: 'La Gioconda',
+    artista: 'Leonardo da Vinci',
+    año: 1503,
+    sala: 'Sala 1',
+  },
+  {
+    id: 2,
+    titulo: 'La Noche Estrellada',
+    artista: 'Vincent van Gogh',
+    año: 1889,
+    sala: 'Sala 2',
+  },
+  {
+    id: 3,
+    titulo: 'Guernica',
+    artista: 'Pablo Picasso',
+    año: 1937,
+    sala: 'Sala 3',
+  },
+  {
+    id: 4,
+    titulo: 'El Grito',
+    artista: 'Edvard Munch',
+    año: 1893,
+    sala: 'Sala 4',
+  },
 ];
-let nextId = 1;
 
+let nextId = 5;
+
+// Obtener todas las obras
 export async function findAll(): Promise<Item[]> {
-  // TODO: Retornar copia defensiva del array completo
-  // return [...store];
-  throw new Error('Not implemented');
+  return [...store];
 }
 
+// Buscar una obra por ID
 export async function findById(id: number): Promise<Item | undefined> {
-  // TODO: Buscar por id y retornar el elemento o undefined
-  // return store.find((item) => item.id === id);
-  throw new Error('Not implemented');
+  const item = store.find((item) => item.id === id);
+
+  return item ? { ...item } : undefined;
 }
 
+// Crear una nueva obra
 export async function create(dto: CreateItemDto): Promise<Item> {
-  // TODO: Crear el item con id auto-incremental y createdAt
-  // const item: Item = { id: nextId++, ...dto, createdAt: new Date().toISOString() };
-  // store.push(item);
-  // return { ...item }; // copia defensiva
-  throw new Error('Not implemented');
+  const item: Item = {
+    id: nextId++,
+    ...dto,
+  };
+
+  store.push(item);
+
+  return { ...item };
 }
 
-export async function update(id: number, dto: UpdateItemDto): Promise<Item | undefined> {
-  // TODO: Encontrar el index, fusionar cambios, retornar copia
-  // const index = store.findIndex((item) => item.id === id);
-  // if (index === -1) return undefined;
-  // store[index] = { ...store[index]!, ...dto };
-  // return { ...store[index]! };
-  throw new Error('Not implemented');
+// Actualizar una obra
+export async function update(
+  id: number,
+  dto: UpdateItemDto
+): Promise<Item | undefined> {
+  const index = store.findIndex((item) => item.id === id);
+
+  if (index === -1) {
+    return undefined;
+  }
+
+  store[index] = {
+    ...store[index],
+    ...dto,
+  };
+
+  return { ...store[index] };
 }
 
+// Eliminar una obra
 export async function remove(id: number): Promise<boolean> {
-  // TODO: Eliminar y retornar true; si no existe, retornar false
-  // const index = store.findIndex((item) => item.id === id);
-  // if (index === -1) return false;
-  // store.splice(index, 1);
-  // return true;
-  throw new Error('Not implemented');
+  const index = store.findIndex((item) => item.id === id);
+
+  if (index === -1) {
+    return false;
+  }
+
+  store.splice(index, 1);
+
+  return true;
 }
