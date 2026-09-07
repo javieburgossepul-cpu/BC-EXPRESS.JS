@@ -35,68 +35,50 @@ Cada obra contiene:
 
 1. Consultar todos los elementos
 Con esta prueba pude ver todos los elementos que estaban guardados en la API.
-<img src="./0-assets/prueba1.jpeg" alt="Prueba de consultar todos los elementos" width="600">
+
+![Prueba de consultar todos los elementos](./0-assets/prueba1.jpeg)
 
 2. Buscar un elemento por ID
 En esta prueba busqué un elemento específico usando su número de ID. Esto permite consultar solamente un registro.
-<img src="./0-assets/prueba2.jpeg" alt="Prueba de búsqueda por ID" width="600">
+
+![Prueba de búsqueda por ID](./0-assets/prueba2.jpeg)
 
 3. Crear un nuevo elemento
 Aquí probé la creación de un nuevo elemento. Se enviaron los datos y la API respondió mostrando el elemento creado.
-<img src="./0-assets/prueba3.jpeg" alt="Prueba de creación de un elemento" width="600">
+
+![Prueba de creación de un elemento](./0-assets/prueba3.jpeg)
 
 4. Actualizar un elemento
 En esta prueba modifiqué la información de un elemento que ya estaba registrado. Después de hacer el cambio, se mostró la información actualizada.
-<img src="./0-assets/prueba4.jpeg" alt="Prueba de actualización" width="600">
+
+![Prueba de actualización](./0-assets/prueba4.jpeg)
 
 5. Eliminar un elemento
 Finalmente probé la opción de eliminar un elemento. La prueba permitió comprobar que el registro podía ser eliminado correctamente.
-<img src="./0-assets/prueba5.jpeg" alt="Prueba de eliminación" width="600">
+
+![Prueba de eliminación](./0-assets/prueba5.jpeg)
 
 ## Estructura del proyecto
 
 ```text
-week-02-express_intro/
-│
 ├── 0-assets/
-│   ├── 01-express-vs-http.svg
-│   ├── 02-middleware-chain.svg
-│   ├── 03-http-methods-codes.svg
 │   ├── prueba1.jpeg
 │   ├── prueba2.jpeg
 │   ├── prueba3.jpeg
 │   ├── prueba4.jpeg
 │   └── prueba5.jpeg
 │
-├── 1-teoria/
-│   ├── 02-routing.md
-│   ├── 03-middleware.md
-│   └── 04-req-res-lifecycle.md
+├── src/
+│   ├── routes/
+│   │   └── items.routes.ts
+│   ├── app.ts
+│   ├── server.ts
+│   ├── store.ts
+│   └── types.ts
 │
-├── 2-practicas/
-│   ├── ejercicio-01-hello-express/
-│   └── ejercicio-02-middleware/
-│
-├── 3-proyecto_starter/
-│   ├── node_modules/
-│   ├── src/
-│   │   ├── routes/
-│   │   ├── app.ts
-│   │   ├── server.ts
-│   │   ├── store.ts
-│   │   └── types.ts
-│   │
-│   ├── .env.example
-│   ├── package.json
-│   ├── pnpm-lock.yaml
-│   └── tsconfig.json
-│
-├── 4-recursos/
-│   ├── ebook-free/
-│   ├── videografia/
-│   └── webgrafia/
-│
-├── 5-glosario/
-│   └── README.md
-│
-└── README.md
+├── .env.example
+├── .gitignore
+├── package.json
+├── pnpm-lock.yaml
+├── README.md
+└── tsconfig.json
