@@ -1,12 +1,11 @@
 // ============================================
-// SERVER — Entry point
+// SERVER — Bootstrap del servidor Express
 // ============================================
 import app from './app';
+import { logger } from './config/logger';
 
-const PORT = parseInt(process.env['PORT'] ?? '3000', 10);
+const PORT = process.env['PORT'] ? Number(process.env['PORT']) : 3000;
 
 app.listen(PORT, () => {
-  console.log(`[server] Running on http://localhost:${PORT}`);
-  console.log(`[server] Health: http://localhost:${PORT}/health`);
-  console.log(`[server] API v1: http://localhost:${PORT}/api/v1/items`);
+  logger.info(`Server running on http://localhost:${PORT}`);
 });

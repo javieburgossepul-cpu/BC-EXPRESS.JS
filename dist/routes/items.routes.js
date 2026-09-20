@@ -1,7 +1,4 @@
 "use strict";
-// ============================================
-// ROUTES — Mapeo de URLs a controllers
-// ============================================
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -36,17 +33,16 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.itemsRouter = void 0;
+// ============================================
+// ROUTES — Rutas del recurso del dominio (Obras / Items)
+// ============================================
 const express_1 = require("express");
 const controller = __importStar(require("../controllers/items.controller"));
-exports.itemsRouter = (0, express_1.Router)();
-// Obtener todas las obras
-exports.itemsRouter.get('/', controller.getAll);
-// Obtener una obra por ID
-exports.itemsRouter.get('/:id', controller.getById);
-// Crear una obra
-exports.itemsRouter.post('/', controller.create);
-// Actualizar una obra
-exports.itemsRouter.put('/:id', controller.update);
-// Eliminar una obra
-exports.itemsRouter.delete('/:id', controller.remove);
+const router = (0, express_1.Router)();
+// Endpoints REST CRUD
+router.get('/', controller.getAll);
+router.get('/:id', controller.getById);
+router.post('/', controller.create);
+router.put('/:id', controller.update);
+router.delete('/:id', controller.remove);
+exports.default = router;

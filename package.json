@@ -1,7 +1,7 @@
 {
-  "name": "proyecto-semana-03",
+  "name": "week-04-proyecto",
   "version": "1.0.0",
-  "description": "Proyecto: API REST con arquitectura en 4 capas",
+  "description": "Proyecto semana 04 — Validación, errores y logging",
   "main": "dist/server.js",
   "engines": {
     "node": ">=22.0.0"
@@ -13,12 +13,15 @@
     "start": "node dist/server.js"
   },
   "dependencies": {
-    "express": "5.1.0"
-  },
-  "devDependencies": {
     "@types/express": "5.0.1",
+    "@types/morgan": "1.9.10",
     "@types/node": "22.15.3",
+    "express": "5.1.0",
+    "morgan": "1.10.1",
     "tsx": "4.19.4",
-    "typescript": "5.8.3"
-  }
+    "typescript": "5.8.3",
+    "winston": "3.19.0",
+    "zod": "4.3.6"
+  },
+  "devDependencies": {}
 }

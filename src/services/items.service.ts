@@ -1,23 +1,20 @@
 // ============================================
-// SERVICE — Lógica de negocio
+// SERVICE — Lógica de negocio (Dominio: Museo)
 // ============================================
-
-import {
-  CreateItemDto,
-  UpdateItemDto,
-  Item,
-  PaginatedResponse,
-  PaginationParams,
-} from '../types';
-
+import { Item, PaginatedResponse } from '../types';
 import * as repo from '../repositories/items.repository';
+import { AppError } from '../errors/AppError';
 
-// Obtener obras con paginación
-export async function findAll(
-  params: PaginationParams
-): Promise<PaginatedResponse<Item>> {
-  const { page, limit } = params;
+interface FindAllOptions {
+  page: number;
+  limit: number;
+}
 
+/**
+ * Obtiene lista paginada de obras
+ */
+export async function findAll(opts: FindAllOptions): Promise<PaginatedResponse<Item>> {
+  const { page, limit } = opts;
   const all = await repo.findAll();
 
   const start = (page - 1) * limit;
@@ -31,43 +28,62 @@ export async function findAll(
   };
 }
 
-// Buscar una obra por ID
-export async function findById(
-  id: number
-): Promise<Item | undefined> {
-  return repo.findById(id);
+/**
+ * Busca una obra por su ID. Lanza 404 si no existe.
+ */
+export async function findById(id: number): Promise<Item> {
+  const item = await repo.findById(id);
+  if (!item) {
+    throw new AppError(404, `Obra con id ${id} no encontrada`);
+  }
+  return item;
 }
 
-// Crear una obra
-export async function create(
-  dto: CreateItemDto
-): Promise<Item> {
+/**
+ * Crea una nueva obra con validación de unicidad.
+ */
+export async function create(dto: repo.CreateItemRepoDto): Promise<Item> {
+  const all = await repo.findAll();
+  const duplicate = all.find(
+    (item) =>
+      item.titulo.toLowerCase() === dto.titulo.toLowerCase() &&
+      item.artista.toLowerCase() === dto.artista.toLowerCase()
+  );
+
+  if (duplicate) {
+    throw new AppError(
+      409,
+      `Ya existe una obra con el título '${dto.titulo}' del artista '${dto.artista}'`
+    );
+  }
+
   return repo.create(dto);
 }
 
-// Actualizar una obra
+/**
+ * Actualiza una obra existente. Lanza 404 si no existe.
+ */
 export async function update(
   id: number,
-  dto: UpdateItemDto
-): Promise<Item | undefined> {
+  dto: repo.UpdateItemRepoDto
+): Promise<Item> {
   const exists = await repo.findById(id);
-
   if (!exists) {
-    return undefined;
+    throw new AppError(404, `Obra con id ${id} no encontrada`);
   }
 
-  return repo.update(id, dto);
+  const updated = await repo.update(id, dto);
+  return updated!;
 }
 
-// Eliminar una obra
-export async function remove(
-  id: number
-): Promise<boolean> {
+/**
+ * Elimina una obra. Lanza 404 si no existe.
+ */
+export async function remove(id: number): Promise<void> {
   const exists = await repo.findById(id);
-
   if (!exists) {
-    return false;
+    throw new AppError(404, `Obra con id ${id} no encontrada`);
   }
 
-  return repo.remove(id);
+  await repo.remove(id);
 }

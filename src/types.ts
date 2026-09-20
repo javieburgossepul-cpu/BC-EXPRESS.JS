@@ -1,23 +1,31 @@
-export interface Item {
+// ============================================
+// TYPES — Dominio: Museo / Obras de Arte
+// Recurso principal: Obra (Item)
+// ============================================
+
+export interface Obra {
   id: number;
   titulo: string;
   artista: string;
-  año: number;
+  anio: number;
   sala: string;
+  valorEstimado: number;
+  tecnica: string;
+  disponible: boolean;
+  createdAt: Date;
 }
 
-// DTO para crear una obra
-export type CreateItemDto = Omit<Item, 'id'>;
+// Alias para compatibilidad con código genérico
+export type Item = Obra;
 
-// DTO para actualizar una obra
-export type UpdateItemDto = Partial<CreateItemDto>;
+// ============================================
+// Tipos de respuesta estándar
+// ============================================
 
-// Respuesta para un solo elemento
 export interface SingleResponse<T> {
   data: T;
 }
 
-// Respuesta para listas con paginación
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;
@@ -25,13 +33,18 @@ export interface PaginatedResponse<T> {
   limit: number;
 }
 
-// Respuesta para errores
+export interface ValidationErrorResponse {
+  error: string;
+  message: string;
+  issues: Array<{ field: string; message: string }>;
+}
+
 export interface ErrorResponse {
   error: string;
   message: string;
+  stack?: string;
 }
 
-// Parámetros de paginación
 export interface PaginationParams {
   page: number;
   limit: number;

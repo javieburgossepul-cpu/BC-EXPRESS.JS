@@ -1,7 +1,4 @@
 "use strict";
-// ============================================
-// SERVICE — Lógica de negocio
-// ============================================
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -42,9 +39,12 @@ exports.create = create;
 exports.update = update;
 exports.remove = remove;
 const repo = __importStar(require("../repositories/items.repository"));
-// Obtener obras con paginación
-async function findAll(params) {
-    const { page, limit } = params;
+const AppError_1 = require("../errors/AppError");
+/**
+ * Obtiene lista paginada de obras
+ */
+async function findAll(opts) {
+    const { page, limit } = opts;
     const all = await repo.findAll();
     const start = (page - 1) * limit;
     const data = all.slice(start, start + limit);
@@ -55,27 +55,46 @@ async function findAll(params) {
         limit,
     };
 }
-// Buscar una obra por ID
+/**
+ * Busca una obra por su ID. Lanza 404 si no existe.
+ */
 async function findById(id) {
-    return repo.findById(id);
+    const item = await repo.findById(id);
+    if (!item) {
+        throw new AppError_1.AppError(404, `Obra con id ${id} no encontrada`);
+    }
+    return item;
 }
-// Crear una obra
+/**
+ * Crea una nueva obra con validación de unicidad.
+ */
 async function create(dto) {
+    const all = await repo.findAll();
+    const duplicate = all.find((item) => item.titulo.toLowerCase() === dto.titulo.toLowerCase() &&
+        item.artista.toLowerCase() === dto.artista.toLowerCase());
+    if (duplicate) {
+        throw new AppError_1.AppError(409, `Ya existe una obra con el título '${dto.titulo}' del artista '${dto.artista}'`);
+    }
     return repo.create(dto);
 }
-// Actualizar una obra
+/**
+ * Actualiza una obra existente. Lanza 404 si no existe.
+ */
 async function update(id, dto) {
     const exists = await repo.findById(id);
     if (!exists) {
-        return undefined;
+        throw new AppError_1.AppError(404, `Obra con id ${id} no encontrada`);
     }
-    return repo.update(id, dto);
+    const updated = await repo.update(id, dto);
+    return updated;
 }
-// Eliminar una obra
+/**
+ * Elimina una obra. Lanza 404 si no existe.
+ */
 async function remove(id) {
     const exists = await repo.findById(id);
     if (!exists) {
-        return false;
+        throw new AppError_1.AppError(404, `Obra con id ${id} no encontrada`);
     }
-    return repo.remove(id);
+    await repo.remove(id);
 }

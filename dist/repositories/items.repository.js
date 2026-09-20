@@ -1,81 +1,103 @@
 "use strict";
-// ============================================
-// REPOSITORY — Capa de acceso a datos
-// ============================================
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.findAll = findAll;
 exports.findById = findById;
 exports.create = create;
 exports.update = update;
 exports.remove = remove;
-// Datos iniciales del museo
-const store = [
+// Seed data inicial de obras maestras del museo
+const items = [
     {
         id: 1,
         titulo: 'La Gioconda',
         artista: 'Leonardo da Vinci',
-        año: 1503,
+        anio: 1503,
         sala: 'Sala 1',
+        valorEstimado: 860000000,
+        tecnica: 'Óleo sobre tabla de álamo',
+        disponible: true,
+        createdAt: new Date('2024-01-15T10:00:00Z'),
     },
     {
         id: 2,
         titulo: 'La Noche Estrellada',
         artista: 'Vincent van Gogh',
-        año: 1889,
+        anio: 1889,
         sala: 'Sala 2',
+        valorEstimado: 100000000,
+        tecnica: 'Óleo sobre lienzo',
+        disponible: true,
+        createdAt: new Date('2024-02-10T11:30:00Z'),
     },
     {
         id: 3,
         titulo: 'Guernica',
         artista: 'Pablo Picasso',
-        año: 1937,
+        anio: 1937,
         sala: 'Sala 3',
+        valorEstimado: 200000000,
+        tecnica: 'Óleo sobre lienzo',
+        disponible: true,
+        createdAt: new Date('2024-03-05T09:15:00Z'),
     },
     {
         id: 4,
         titulo: 'El Grito',
         artista: 'Edvard Munch',
-        año: 1893,
+        anio: 1893,
         sala: 'Sala 4',
+        valorEstimado: 120000000,
+        tecnica: 'Óleo, temple y pastel sobre cartón',
+        disponible: true,
+        createdAt: new Date('2024-04-20T14:45:00Z'),
     },
 ];
 let nextId = 5;
-// Obtener todas las obras
+/**
+ * Obtiene todas las obras registradas
+ */
 async function findAll() {
-    return [...store];
+    return items.map((item) => ({ ...item }));
 }
-// Buscar una obra por ID
+/**
+ * Busca una obra por su ID
+ */
 async function findById(id) {
-    const item = store.find((item) => item.id === id);
+    const item = items.find((i) => i.id === id);
     return item ? { ...item } : undefined;
 }
-// Crear una nueva obra
+/**
+ * Registra una nueva obra
+ */
 async function create(dto) {
     const item = {
         id: nextId++,
         ...dto,
+        createdAt: new Date(),
     };
-    store.push(item);
+    items.push(item);
     return { ...item };
 }
-// Actualizar una obra
+/**
+ * Actualiza los datos de una obra existente
+ */
 async function update(id, dto) {
-    const index = store.findIndex((item) => item.id === id);
-    if (index === -1) {
+    const index = items.findIndex((i) => i.id === id);
+    if (index === -1)
         return undefined;
-    }
-    store[index] = {
-        ...store[index],
+    items[index] = {
+        ...items[index],
         ...dto,
     };
-    return { ...store[index] };
+    return { ...items[index] };
 }
-// Eliminar una obra
+/**
+ * Elimina una obra por su ID
+ */
 async function remove(id) {
-    const index = store.findIndex((item) => item.id === id);
-    if (index === -1) {
+    const index = items.findIndex((i) => i.id === id);
+    if (index === -1)
         return false;
-    }
-    store.splice(index, 1);
+    items.splice(index, 1);
     return true;
 }

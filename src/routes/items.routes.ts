@@ -1,23 +1,16 @@
 // ============================================
-// ROUTES — Mapeo de URLs a controllers
+// ROUTES — Rutas del recurso del dominio (Obras / Items)
 // ============================================
-
 import { Router } from 'express';
 import * as controller from '../controllers/items.controller';
 
-export const itemsRouter = Router();
+const router = Router();
 
-// Obtener todas las obras
-itemsRouter.get('/', controller.getAll);
+// Endpoints REST CRUD
+router.get('/', controller.getAll);
+router.get('/:id', controller.getById);
+router.post('/', controller.create);
+router.put('/:id', controller.update);
+router.delete('/:id', controller.remove);
 
-// Obtener una obra por ID
-itemsRouter.get('/:id', controller.getById);
-
-// Crear una obra
-itemsRouter.post('/', controller.create);
-
-// Actualizar una obra
-itemsRouter.put('/:id', controller.update);
-
-// Eliminar una obra
-itemsRouter.delete('/:id', controller.remove);
+export default router;
