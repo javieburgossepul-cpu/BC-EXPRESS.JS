@@ -1,16 +1,13 @@
-// ============================================
-// ROUTES — Rutas del recurso del dominio (Obras / Items)
-// ============================================
+// src/routes/items.routes.ts — Definición de rutas CRUD para Obras de Arte
 import { Router } from 'express';
-import * as controller from '../controllers/items.controller';
+import * as ctrl from '../controllers/items.controller';
 
 const router = Router();
 
-// Endpoints REST CRUD
-router.get('/', controller.getAll);
-router.get('/:id', controller.getById);
-router.post('/', controller.create);
-router.put('/:id', controller.update);
-router.delete('/:id', controller.remove);
+router.get('/', ctrl.getAll);
+router.get('/:id', ctrl.getById);
+router.post('/', ctrl.create);
+router.put('/:id', ctrl.update);
+router.delete('/:id', ctrl.remove);
 
 export default router;

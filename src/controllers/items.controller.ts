@@ -1,161 +1,103 @@
-// ============================================
-// CONTROLLER — Controlador HTTP delgado (Thin Controller)
-// ============================================
+// src/controllers/items.controller.ts — Capa HTTP para Obras de Arte
 import { Request, Response, NextFunction } from 'express';
-import { z } from 'zod';
 import * as service from '../services/items.service';
-import {
-  createItemSchema,
-  updateItemSchema,
-  CreateItemDto,
-  UpdateItemDto,
-} from '../schemas/item.schema';
-import { SingleResponse, PaginatedResponse } from '../types';
+import { createArtworkSchema, updateArtworkSchema } from '../schemas/items.schema';
+import { AppError } from '../errors/AppError';
 
-// Schema para validar parámetro :id
-const idSchema = z.coerce.number().int({
-  message: 'El id debe ser un número entero',
-}).positive({
-  message: 'El id debe ser un número positivo',
-});
-
-// Helper para formatear issues de Zod de forma consistente
-function formatIssues(error: z.ZodError): Array<{ field: string; message: string }> {
-  return error.issues.map((issue) => ({
-    field: issue.path.join('.') || 'id',
-    message: issue.message,
-  }));
-}
-
-/**
- * GET /api/v1/obras (o /api/v1/items) — Listar con paginación
- */
-export async function getAll(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function getAll(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const page = Math.max(1, Number(req.query['page']) || 1);
-    const limit = Math.max(1, Number(req.query['limit']) || 10);
+    const rawPage = Number(req.query['page']);
+    const rawLimit = Number(req.query['limit']);
 
-    const result = await service.findAll({ page, limit });
-    res.json(result satisfies PaginatedResponse<typeof result.data[number]>);
+    const page = !isNaN(rawPage) && rawPage > 0 ? Math.floor(rawPage) : 1;
+    const limit = !isNaN(rawLimit) && rawLimit > 0 ? Math.min(100, Math.floor(rawLimit)) : 10;
+
+    const result = await service.listArtworks(page, limit);
+    res.json(result);
   } catch (err) {
     next(err);
   }
 }
 
-/**
- * GET /api/v1/obras/:id — Obtener obra por ID
- */
-export async function getById(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function getById(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const parsedId = idSchema.safeParse(req.params['id']);
-    if (!parsedId.success) {
-      res.status(400).json({
-        error: 'Validation Error',
-        message: 'Parámetro id inválido',
-        issues: formatIssues(parsedId.error),
-      });
-      return;
+    const id = Number(req.params['id']);
+    if (isNaN(id) || id <= 0) {
+      throw new AppError(400, 'El parámetro ID debe ser un número entero positivo');
     }
 
-    const item = await service.findById(parsedId.data);
-    res.json({ data: item } satisfies SingleResponse<typeof item>);
+    const item = await service.getArtwork(id);
+    res.json(item);
   } catch (err) {
     next(err);
   }
 }
 
-/**
- * POST /api/v1/obras — Crear nueva obra validando con Zod
- */
-export async function create(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function create(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const result = createItemSchema.safeParse(req.body);
-    if (!result.success) {
+    const parsed = createArtworkSchema.safeParse(req.body);
+    if (!parsed.success) {
       res.status(400).json({
-        error: 'Validation Error',
-        message: 'Datos de entrada inválidos',
-        issues: formatIssues(result.error),
+        status: 'error',
+        message: 'Datos de validación inválidos',
+        errors: parsed.error.issues.map((issue) => ({
+          field: issue.path.join('.'),
+          message: issue.message,
+        })),
       });
       return;
     }
 
-    const dto: CreateItemDto = result.data;
-    const item = await service.create(dto);
-    res.status(201).json({ data: item } satisfies SingleResponse<typeof item>);
+    const created = await service.createArtwork(parsed.data);
+    res.status(201).json(created);
   } catch (err) {
     next(err);
   }
 }
 
-/**
- * PUT /api/v1/obras/:id — Actualizar obra existente
- */
-export async function update(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function update(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const parsedId = idSchema.safeParse(req.params['id']);
-    if (!parsedId.success) {
+    const id = Number(req.params['id']);
+    if (isNaN(id) || id <= 0) {
+      throw new AppError(400, 'El parámetro ID debe ser un número entero positivo');
+    }
+
+    const parsed = updateArtworkSchema.safeParse(req.body);
+    if (!parsed.success) {
       res.status(400).json({
-        error: 'Validation Error',
-        message: 'Parámetro id inválido',
-        issues: formatIssues(parsedId.error),
+        status: 'error',
+        message: 'Datos de validación inválidos',
+        errors: parsed.error.issues.map((issue) => ({
+          field: issue.path.join('.'),
+          message: issue.message,
+        })),
       });
       return;
     }
 
-    const result = updateItemSchema.safeParse(req.body);
-    if (!result.success) {
+    if (Object.keys(parsed.data).length === 0) {
       res.status(400).json({
-        error: 'Validation Error',
-        message: 'Datos de entrada inválidos',
-        issues: formatIssues(result.error),
+        status: 'error',
+        message: 'Debe proporcionar al menos un campo para actualizar',
       });
       return;
     }
 
-    const dto: UpdateItemDto = result.data;
-    const item = await service.update(parsedId.data, dto);
-    res.json({ data: item } satisfies SingleResponse<typeof item>);
+    const updated = await service.updateArtwork(id, parsed.data);
+    res.json(updated);
   } catch (err) {
     next(err);
   }
 }
 
-/**
- * DELETE /api/v1/obras/:id — Eliminar obra por ID
- */
-export async function remove(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function remove(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const parsedId = idSchema.safeParse(req.params['id']);
-    if (!parsedId.success) {
-      res.status(400).json({
-        error: 'Validation Error',
-        message: 'Parámetro id inválido',
-        issues: formatIssues(parsedId.error),
-      });
-      return;
+    const id = Number(req.params['id']);
+    if (isNaN(id) || id <= 0) {
+      throw new AppError(400, 'El parámetro ID debe ser un número entero positivo');
     }
 
-    await service.remove(parsedId.data);
+    await service.deleteArtwork(id);
     res.status(204).send();
   } catch (err) {
     next(err);

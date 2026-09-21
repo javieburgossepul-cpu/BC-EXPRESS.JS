@@ -1,178 +1,154 @@
-# Proyecto Semana 04 - API de Museo de Arte
+# Proyecto Semana 05 — API con PostgreSQL y Prisma ORM
 
-API para la administracion de obras de arte en un museo. El proyecto incluye validacion de datos de entrada con Zod, control centralizado de errores con una clase personalizada (AppError) y registro de actividad en consola y archivos con Winston y Morgan.
+## 1. Descripción y Dominio
 
----
+API REST desarrollada para la gestión de un **Museo**, implementando persistencia en **PostgreSQL** mediante **Prisma ORM**.
 
-## Dominio Asignado
-
-* **Dominio**: Museo de Arte
-* **Recurso**: Obras de Arte (`Obra` / `Item`)
-* **Ruta principal**: `/api/v1/obras` (tambien disponible en `/api/v1/items`)
-
-### Campos de una Obra
-
-| Campo | Tipo | Obligatorio | Descripcion / Regla |
-|---|---|:---:|---|
-| id | Numero | No (Automatico) | Identificador unico positivo |
-| titulo | Texto | Si | Nombre de la obra |
-| artista | Texto | Si | Nombre del creador de la obra |
-| anio | Numero | Si | Anio de creacion (entero) |
-| sala | Texto | Si | Sala del museo donde se ubica |
-| valorEstimado | Numero | Si | Valor comercial (mayor a 0) |
-| tecnica | Texto | No | Tecnica usada (por defecto: 'Oleo sobre lienzo') |
-| disponible | Booleano | No | Si esta disponible para exhibicion (por defecto: true) |
-| createdAt | Fecha | No (Automatico) | Fecha de registro en el sistema |
+- **Dominio:** Museo
+- **Recurso principal:** `Artwork` (Obra de Arte)
+- **Recurso secundario:** `Artist` (Artista)
+- **Relación:** 1 Artista puede tener muchas Obras de Arte (1:N).
 
 ---
 
-## Endpoints Disponibles
+## 2. Diagrama de Entidades
 
-| Metodo | Ruta | Descripcion | Codigo Exitoso |
-|---|---|---|:---:|
-| GET | `/health` | Estado del servidor | 200 OK |
-| GET | `/api/v1/obras` | Obtener todas las obras (soporta `?page=1&limit=10`) | 200 OK |
-| GET | `/api/v1/obras/:id` | Obtener una obra por su ID | 200 OK |
-| POST | `/api/v1/obras` | Crear una nueva obra | 201 Created |
-| PUT | `/api/v1/obras/:id` | Actualizar una obra existente | 200 OK |
-| DELETE | `/api/v1/obras/:id` | Eliminar una obra por su ID | 204 No Content |
-
----
-
-## Manejo de Errores
-
-El sistema devuelve respuestas estandarizadas en formato JSON ante cualquier error:
-
-### 1. Datos invalidos al crear o actualizar (HTTP 400)
-Se genera cuando faltan campos requeridos o tienen un tipo incorrecto:
-```json
-{
-  "error": "Validation Error",
-  "message": "Datos de entrada inválidos",
-  "issues": [
-    { "field": "titulo", "message": "El título es obligatorio" },
-    { "field": "valorEstimado", "message": "El valor estimado debe ser mayor a 0" }
-  ]
-}
-```
-
-### 2. ID no numerico en la URL (HTTP 400)
-Se genera al consultar por ejemplo `/api/v1/obras/abc`:
-```json
-{
-  "error": "Validation Error",
-  "message": "Parámetro id inválido",
-  "issues": [
-    { "field": "id", "message": "El id debe ser un número positivo" }
-  ]
-}
-```
-
-### 3. Obra no encontrada (HTTP 404)
-Se genera al buscar un ID que no existe en el sistema:
-```json
-{
-  "error": "Not Found",
-  "message": "Obra con id 999 no encontrada"
-}
-```
-
-### 4. Ruta inexistente (HTTP 404)
-Se genera al acceder a una ruta no registrada:
-```json
-{
-  "error": "Not Found",
-  "message": "Ruta GET /ruta-inexistente no encontrada"
-}
+```text
+[ Artist ] 1 ────────── N [ Artwork ]
+- id (PK)                 - id (PK)
+- name                    - title
+- nationality             - inventoryCode (UK)
+- birthYear               - year
+                          - medium
+                          - estimatedValue
+                          - isExhibited
+                          - artistId (FK)
 ```
 
 ---
 
-## Consultas de Prueba
+## 3. Requisitos Implementados
 
-Puedes probar los endpoints con los siguientes comandos en tu terminal:
+1. **Modelos y Migraciones:** Modelos `Artist` y `Artwork` en `prisma/schema.prisma` con tipos de datos, timestamps y código de inventario único (`@unique`).
+2. **Seed Idempotente:** Script en `prisma/seed.ts` que limpia datos previos (`deleteMany`) y carga 5 artistas y 8 obras de arte.
+3. **Control de Errores de Base de Datos:**
+   - `P2002` (código único duplicado) -> `409 Conflict`
+   - `P2025` (registro no encontrado) -> `404 Not Found`
+   - `P2003` (clave foránea no existe) -> `404 Not Found`
+4. **Paginación:** Endpoint de listado con parámetros `page` y `limit`, retornando `{ data, total, page, limit }`.
+5. **Validación:** Esquemas Zod para la creación y actualización de obras.
 
-### 1. Peticion POST con datos invalidos (Genera Error 400)
+---
+
+## 4. Instrucciones de Uso
+
+### Paso 1: Levantar PostgreSQL con Docker
 ```bash
-curl -X POST http://localhost:3000/api/v1/obras \
-  -H "Content-Type: application/json" \
-  -d '{"titulo":"","artista":"","anio":"texto","valorEstimado":-10}'
+docker compose up -d
 ```
 
-### 2. Peticion GET con ID no numerico (Genera Error 400)
-```bash
-curl -X GET http://localhost:3000/api/v1/obras/abc
-```
-
-### 3. Peticion GET con ID que no existe (Genera Error 404)
-```bash
-curl -X GET http://localhost:3000/api/v1/obras/999
-```
-
-### 4. Peticion a ruta no existente (Genera Error 404)
-```bash
-curl -X GET http://localhost:3000/ruta-inexistente
-```
-
-### 5. Peticion POST exitosa (Genera 201 Created y logs en consola)
-```bash
-curl -X POST http://localhost:3000/api/v1/obras \
-  -H "Content-Type: application/json" \
-  -d '{
-    "titulo": "Las Meninas",
-    "artista": "Diego Velazquez",
-    "anio": 1656,
-    "sala": "Sala Principal",
-    "valorEstimado": 450000000,
-    "tecnica": "Oleo sobre lienzo",
-    "disponible": true
-  }'
-```
-
----
-
-## Pruebas Realizadas
-
-### 1. Peticion POST con Body Invalido -> Error 400 con issues[]
-<img src="./0-assets/cap1.png" alt="Prueba POST Invalido" width="800">
-
----
-
-### 2. Peticion GET con ID no numerico -> Error 400
-<img src="./0-assets/cap2.png" alt="Prueba ID no numerico" width="800">
-
----
-
-### 3. Peticion GET con ID inexistente -> Error 404
-<img src="./0-assets/cap3.png" alt="Prueba ID inexistente" width="800">
-
----
-
-### 4. Peticion a Ruta Inexistente -> Error 404 en formato JSON
-<img src="./0-assets/cap4.png" alt="Prueba Ruta inexistente" width="800">
-
----
-
-### 5. Peticion POST Exitosa y Registro de Logs en Consola
-<img src="./0-assets/cap5.png" alt="Prueba POST Exitoso y Logs" width="800">
-
----
-
-## Como Ejecutar el Proyecto
-
-### 1. Instalar dependencias
+### Paso 2: Instalar dependencias
 ```bash
 pnpm install
 ```
 
-### 2. Iniciar servidor en modo desarrollo
+### Paso 3: Configurar variables de entorno
+```bash
+cp .env.example .env
+```
+
+### Paso 4: Ejecutar migraciones
+```bash
+pnpm dlx prisma migrate dev --name init
+```
+
+### Paso 5: Poblar la base de datos (Seed)
+```bash
+pnpm dlx prisma db seed
+```
+
+### Paso 6: Iniciar el servidor
 ```bash
 pnpm dev
 ```
-El servidor se ejecutara en: `http://localhost:3000`
+Servidor disponible en: `http://localhost:8080`
 
-### 3. Compilar e iniciar en modo produccion
-```bash
-pnpm build
-pnpm start
+---
+
+## 5. Logs del Seed
+
+Resultado de la ejecución de `pnpm dlx prisma db seed`:
+
+```plaintext
+> tsx prisma/seed.ts
+
+Iniciando seed para el dominio Museo...
+Datos previos eliminados.
+5 artistas creados.
+8 obras de arte creadas exitosamente.
 ```
+
+---
+
+## 6. Endpoints de la API
+
+Ruta base: `http://localhost:8080/api/v1/artworks`
+
+| Método | Ruta | Descripción | Status |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/health` | Estado del servidor | 200 |
+| `GET` | `/api/v1/artworks?page=1&limit=10` | Listado paginado con datos del artista | 200 |
+| `GET` | `/api/v1/artworks/:id` | Detalle de una obra por ID | 200 / 404 |
+| `POST` | `/api/v1/artworks` | Crear nueva obra | 201 / 400 / 409 |
+| `PUT` | `/api/v1/artworks/:id` | Actualizar obra existente | 200 / 400 / 404 |
+| `DELETE`| `/api/v1/artworks/:id` | Eliminar obra por ID | 204 / 404 |
+
+### Ejemplos de Petición
+
+#### Crear obra (`POST /api/v1/artworks`)
+```json
+{
+  "title": "La noche estrellada",
+  "inventoryCode": "MUS-ART-003",
+  "year": 1889,
+  "medium": "Óleo sobre lienzo",
+  "estimatedValue": 100000000,
+  "isExhibited": true,
+  "artistId": 2
+}
+```
+
+#### Actualizar obra (`PUT /api/v1/artworks/1`)
+```json
+{
+  "estimatedValue": 950000000,
+  "isExhibited": false
+}
+```
+
+---
+
+## 7. Capturas de Pantalla (Postman / Thunder Client)
+
+### 1. GET — Listado Paginado (`/api/v1/artworks`)
+![GET Listado](./0-assets/1-get-all.png)
+
+---
+
+### 2. GET — Detalle por ID (`/api/v1/artworks/:id`)
+![GET Detalle](./0-assets/2-get-by-id.png)
+
+---
+
+### 3. POST — Crear Obra (`/api/v1/artworks`)
+![POST Crear](./0-assets/3-post-create.png)
+
+---
+
+### 4. PUT — Actualizar Obra (`/api/v1/artworks/:id`)
+![PUT Actualizar](./0-assets/4-put-update.png)
+
+---
+
+### 5. DELETE — Eliminar Obra (`/api/v1/artworks/:id`)
+![DELETE Eliminar](./0-assets/5-delete.png)

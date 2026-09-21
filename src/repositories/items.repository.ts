@@ -1,114 +1,107 @@
-// ============================================
-// REPOSITORY — Capa de acceso a datos (en memoria)
-// Dominio: Museo / Obras de Arte
-// ============================================
-import { Item } from '../types';
+// src/repositories/items.repository.ts — Acceso a datos con Prisma para Obras de Arte
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { prisma } from '../lib/prisma';
+import { AppError } from '../errors/AppError';
+import { CreateArtworkDto, UpdateArtworkDto } from '../schemas/items.schema';
 
-export type CreateItemRepoDto = Omit<Item, 'id' | 'createdAt'>;
-export type UpdateItemRepoDto = Partial<CreateItemRepoDto>;
-
-// Seed data inicial de obras maestras del museo
-const items: Item[] = [
-  {
-    id: 1,
-    titulo: 'La Gioconda',
-    artista: 'Leonardo da Vinci',
-    anio: 1503,
-    sala: 'Sala 1',
-    valorEstimado: 860000000,
-    tecnica: 'Óleo sobre tabla de álamo',
-    disponible: true,
-    createdAt: new Date('2024-01-15T10:00:00Z'),
-  },
-  {
-    id: 2,
-    titulo: 'La Noche Estrellada',
-    artista: 'Vincent van Gogh',
-    anio: 1889,
-    sala: 'Sala 2',
-    valorEstimado: 100000000,
-    tecnica: 'Óleo sobre lienzo',
-    disponible: true,
-    createdAt: new Date('2024-02-10T11:30:00Z'),
-  },
-  {
-    id: 3,
-    titulo: 'Guernica',
-    artista: 'Pablo Picasso',
-    anio: 1937,
-    sala: 'Sala 3',
-    valorEstimado: 200000000,
-    tecnica: 'Óleo sobre lienzo',
-    disponible: true,
-    createdAt: new Date('2024-03-05T09:15:00Z'),
-  },
-  {
-    id: 4,
-    titulo: 'El Grito',
-    artista: 'Edvard Munch',
-    anio: 1893,
-    sala: 'Sala 4',
-    valorEstimado: 120000000,
-    tecnica: 'Óleo, temple y pastel sobre cartón',
-    disponible: true,
-    createdAt: new Date('2024-04-20T14:45:00Z'),
-  },
-];
-
-let nextId = 5;
-
-/**
- * Obtiene todas las obras registradas
- */
-export async function findAll(): Promise<Item[]> {
-  return items.map((item) => ({ ...item }));
+export interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
-/**
- * Busca una obra por su ID
- */
-export async function findById(id: number): Promise<Item | undefined> {
-  const item = items.find((i) => i.id === id);
-  return item ? { ...item } : undefined;
-}
+export async function findAll(page: number, limit: number): Promise<PaginatedResult<unknown>> {
+  const skip = (page - 1) * limit;
 
-/**
- * Registra una nueva obra
- */
-export async function create(dto: CreateItemRepoDto): Promise<Item> {
-  const item: Item = {
-    id: nextId++,
-    ...dto,
-    createdAt: new Date(),
+  const [data, total] = await Promise.all([
+    prisma.artwork.findMany({
+      skip,
+      take: limit,
+      include: {
+        artist: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    }),
+    prisma.artwork.count(),
+  ]);
+
+  return {
+    data,
+    total,
+    page,
+    limit,
   };
-  items.push(item);
-  return { ...item };
 }
 
-/**
- * Actualiza los datos de una obra existente
- */
-export async function update(
-  id: number,
-  dto: UpdateItemRepoDto
-): Promise<Item | undefined> {
-  const index = items.findIndex((i) => i.id === id);
-  if (index === -1) return undefined;
-
-  items[index] = {
-    ...items[index]!,
-    ...dto,
-  };
-  return { ...items[index]! };
+export async function findById(id: number): Promise<unknown | null> {
+  return prisma.artwork.findUnique({
+    where: { id },
+    include: {
+      artist: true,
+    },
+  });
 }
 
-/**
- * Elimina una obra por su ID
- */
-export async function remove(id: number): Promise<boolean> {
-  const index = items.findIndex((i) => i.id === id);
-  if (index === -1) return false;
+export async function create(data: CreateArtworkDto): Promise<unknown> {
+  try {
+    return await prisma.artwork.create({
+      data,
+      include: {
+        artist: true,
+      },
+    });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        throw new AppError(409, 'Ya existe una obra de arte con ese código de inventario');
+      }
+      if (error.code === 'P2003') {
+        throw new AppError(404, 'El artista asociado no existe');
+      }
+    }
+    throw error;
+  }
+}
 
-  items.splice(index, 1);
-  return true;
+export async function update(id: number, data: UpdateArtworkDto): Promise<unknown> {
+  try {
+    return await prisma.artwork.update({
+      where: { id },
+      data,
+      include: {
+        artist: true,
+      },
+    });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      if (error.code === 'P2025') {
+        throw new AppError(404, 'Obra de arte no encontrada');
+      }
+      if (error.code === 'P2002') {
+        throw new AppError(409, 'Ya existe una obra de arte con ese código de inventario');
+      }
+      if (error.code === 'P2003') {
+        throw new AppError(404, 'El artista asociado no existe');
+      }
+    }
+    throw error;
+  }
+}
+
+export async function remove(id: number): Promise<void> {
+  try {
+    await prisma.artwork.delete({
+      where: { id },
+    });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      if (error.code === 'P2025') {
+        throw new AppError(404, 'Obra de arte no encontrada');
+      }
+    }
+    throw error;
+  }
 }
