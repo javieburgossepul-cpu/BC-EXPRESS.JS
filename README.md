@@ -13,17 +13,7 @@ API REST desarrollada para la gestión de un **Museo**, implementando persistenc
 
 ## 2. Diagrama de Entidades
 
-```text
-[ Artist ] 1 ────────── N [ Artwork ]
-- id (PK)                 - id (PK)
-- name                    - title
-- nationality             - inventoryCode (UK)
-- birthYear               - year
-                          - medium
-                          - estimatedValue
-                          - isExhibited
-                          - artistId (FK)
-```
+<img src="./0-assets/diagramaERD.png" alt="Diagrama de Entidades (ERD)" width="100%" />
 
 ---
 
@@ -131,24 +121,24 @@ Ruta base: `http://localhost:8080/api/v1/artworks`
 ## 7. Capturas de Pantalla (Postman / Thunder Client)
 
 ### 1. GET — Listado Paginado (`/api/v1/artworks`)
-![GET Listado](./0-assets/1-get-all.png)
+<img src="./0-assets/cap1.png" alt="GET Listado Paginado" width="100%" />
 
 ---
 
 ### 2. GET — Detalle por ID (`/api/v1/artworks/:id`)
-![GET Detalle](./0-assets/2-get-by-id.png)
+<img src="./0-assets/cap2.png" alt="GET Detalle por ID" width="100%" />
 
 ---
 
 ### 3. POST — Crear Obra (`/api/v1/artworks`)
-![POST Crear](./0-assets/3-post-create.png)
+<img src="./0-assets/cap3.png" alt="POST Crear Obra" width="100%" />
 
 ---
 
 ### 4. PUT — Actualizar Obra (`/api/v1/artworks/:id`)
-![PUT Actualizar](./0-assets/4-put-update.png)
+<img src="./0-assets/cap4.png" alt="PUT Actualizar Obra" width="100%" />
 
 ---
 
 ### 5. DELETE — Eliminar Obra (`/api/v1/artworks/:id`)
-![DELETE Eliminar](./0-assets/5-delete.png)
+<img src="./0-assets/cap5.png" alt="DELETE Eliminar Obra" width="100%" />
