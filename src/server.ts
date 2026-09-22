@@ -1,29 +1,21 @@
-// src/server.ts — Entry point del servidor
+try {
+  process.loadEnvFile();
+} catch {
+  // Ignorar si el archivo .env ya está cargado por el entorno
+}
 import { app } from './app';
-import { logger } from './config/logger';
-import { prisma } from './lib/prisma';
+import { connectDB } from './lib/mongoose';
 
-const PORT = Number(process.env['PORT']) || 8080;
+const PORT = process.env['PORT'] ?? '8080';
 
-const server = app.listen(PORT, () => {
-  logger.info(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
-  logger.info(`🏛️ Dominio: Museo (Obras de Arte y Artistas)`);
-  logger.info(`📘 Entorno: ${process.env['NODE_ENV'] ?? 'development'}`);
-});
-
-async function gracefulShutdown(signal: string): Promise<void> {
-  logger.info(`Recibida señal ${signal}. Cerrando servidor de forma ordenada...`);
-  server.close(async () => {
-    try {
-      await prisma.$disconnect();
-      logger.info('Conexión con Prisma desconectada.');
-      process.exit(0);
-    } catch (err) {
-      logger.error('Error al desconectar Prisma:', err);
-      process.exit(1);
-    }
+async function main(): Promise<void> {
+  await connectDB();
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
   });
 }
 
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+main().catch((err: unknown) => {
+  console.error(err);
+  process.exit(1);
+});

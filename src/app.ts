@@ -1,23 +1,25 @@
-// src/app.ts — Configuración de la aplicación Express
+// src/app.ts — Configuración de Express para Dominio Museo
 import express from 'express';
+import secondaryRouter from './routes/secondary.routes';
+import primaryRouter from './routes/primary.routes';
 import { errorHandler } from './middlewares/errorHandler';
 import { notFound } from './middlewares/notFound';
-import itemsRouter from './routes/items.routes';
 
-const app = express();
+export const app = express();
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok' });
 });
 
-// Rutas de la API para el dominio Museo (Obras de Arte) y alias de compatibilidad
-app.use('/api/v1/artworks', itemsRouter);
-app.use('/api/v1/items', itemsRouter);
+// Rutas del Dominio Museo (Artistas y Obras de Arte) y alias base
+app.use('/api/v1/artists', secondaryRouter);
+app.use('/api/v1/artworks', primaryRouter);
+
+// Compatibilidad con endpoints genéricos
+app.use('/api/v1/secondary', secondaryRouter);
+app.use('/api/v1/primary', primaryRouter);
 
 app.use(notFound);
 app.use(errorHandler);
-
-export { app };
