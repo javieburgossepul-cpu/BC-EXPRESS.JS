@@ -1,23 +1,32 @@
-// src/app.ts — Configuración de la aplicación Express
-import express from 'express';
+import express, { Application } from 'express';
+import cookieParser from 'cookie-parser';
+import authRouter from './routes/auth.routes';
+import obraRouter from './routes/obra.routes';
 import { errorHandler } from './middlewares/errorHandler';
 import { notFound } from './middlewares/notFound';
-import itemsRouter from './routes/items.routes';
 
-const app = express();
+export const app: Application = express();
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
+// Endpoint de salud
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    domain: 'Museo',
+    resource: 'Obras de Arte',
+    timestamp: new Date().toISOString(),
+  });
 });
 
-// Rutas de la API para el dominio Museo (Obras de Arte) y alias de compatibilidad
-app.use('/api/v1/artworks', itemsRouter);
-app.use('/api/v1/items', itemsRouter);
+// Rutas de autenticación
+app.use('/api/v1/auth', authRouter);
 
+// Rutas del recurso principal: Obras de Arte (Museo)
+app.use('/api/v1/obras', obraRouter);
+app.use('/api/v1/artworks', obraRouter);
+
+// Middlewares de manejo de errores
 app.use(notFound);
 app.use(errorHandler);
-
-export { app };

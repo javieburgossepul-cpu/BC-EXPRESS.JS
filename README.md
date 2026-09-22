@@ -1,38 +1,30 @@
-# Proyecto Semana 05 — API con PostgreSQL y Prisma ORM
+# Proyecto Semana 07 — API Museo con Autenticación JWT
 
-## 1. Descripción y Dominio
-
-API REST desarrollada para la gestión de un **Museo**, implementando persistencia en **PostgreSQL** mediante **Prisma ORM**.
-
-- **Dominio:** Museo
-- **Recurso principal:** `Artwork` (Obra de Arte)
-- **Recurso secundario:** `Artist` (Artista)
-- **Relación:** 1 Artista puede tener muchas Obras de Arte (1:N).
+API REST para la administración de un **Museo (Obras de Arte)** con sistema de usuarios, autenticación segura mediante **JWT** y almacenamiento en cookies **HttpOnly**.
 
 ---
 
-## 2. Diagrama de Entidades
+## 🏛️ 1. Dominio y Recurso Principal
 
-<img src="./0-assets/diagramaERD.png" alt="Diagrama de Entidades (ERD)" width="100%" />
+* **Dominio:** Museo
+* **Recurso Principal:** `Obras de Arte`
+* **Recurso de Usuarios:** `User` (Curador / Administrador)
+* **Base de Datos:** MongoDB con Mongoose
+
+### Campos de una Obra de Arte:
+* `titulo`: Nombre de la obra.
+* `codigo`: Código de inventario único (ej: `MUS-001`).
+* `año`: Año de creación.
+* `tecnica`: Material o técnica (ej: `Óleo sobre lienzo`).
+* `valorEstimado`: Precio estimado en el catálogo.
+* `estaExhibida`: Si está en exhibición o en depósito (`true` / `false`).
+* `creadoPor`: Usuario/Curador que registró la obra.
 
 ---
 
-## 3. Requisitos Implementados
+## 🚀 2. Cómo Ejecutar el Proyecto
 
-1. **Modelos y Migraciones:** Modelos `Artist` y `Artwork` en `prisma/schema.prisma` con tipos de datos, timestamps y código de inventario único (`@unique`).
-2. **Seed Idempotente:** Script en `prisma/seed.ts` que limpia datos previos (`deleteMany`) y carga 5 artistas y 8 obras de arte.
-3. **Control de Errores de Base de Datos:**
-   - `P2002` (código único duplicado) -> `409 Conflict`
-   - `P2025` (registro no encontrado) -> `404 Not Found`
-   - `P2003` (clave foránea no existe) -> `404 Not Found`
-4. **Paginación:** Endpoint de listado con parámetros `page` y `limit`, retornando `{ data, total, page, limit }`.
-5. **Validación:** Esquemas Zod para la creación y actualización de obras.
-
----
-
-## 4. Instrucciones de Uso
-
-### Paso 1: Levantar PostgreSQL con Docker
+### Paso 1: Iniciar MongoDB en Docker
 ```bash
 docker compose up -d
 ```
@@ -42,103 +34,82 @@ docker compose up -d
 pnpm install
 ```
 
-### Paso 3: Configurar variables de entorno
+### Paso 3: Cargar datos de prueba (Seed)
 ```bash
-cp .env.example .env
+pnpm seed
 ```
 
-### Paso 4: Ejecutar migraciones
-```bash
-pnpm dlx prisma migrate dev --name init
-```
-
-### Paso 5: Poblar la base de datos (Seed)
-```bash
-pnpm dlx prisma db seed
-```
-
-### Paso 6: Iniciar el servidor
+### Paso 4: Iniciar el servidor
 ```bash
 pnpm dev
 ```
-Servidor disponible en: `http://localhost:8080`
+El servidor estará listo en: `http://localhost:8080`
 
 ---
 
-## 5. Logs del Seed
+## 📌 3. Endpoints de la API
 
-Resultado de la ejecución de `pnpm dlx prisma db seed`:
+### Autenticación (`/api/v1/auth`)
+* `POST /api/v1/auth/register` — Registro de nuevo usuario.
+* `POST /api/v1/auth/login` — Iniciar sesión (guarda cookies de acceso).
+* `POST /api/v1/auth/refresh` — Renovar sesión con nuevo token.
+* `GET /api/v1/auth/me` — Ver perfil del usuario conectado (Ruta protegida).
+* `POST /api/v1/auth/logout` — Cerrar sesión y limpiar cookies.
 
-```plaintext
-> tsx prisma/seed.ts
-
-Iniciando seed para el dominio Museo...
-Datos previos eliminados.
-5 artistas creados.
-8 obras de arte creadas exitosamente.
-```
-
----
-
-## 6. Endpoints de la API
-
-Ruta base: `http://localhost:8080/api/v1/artworks`
-
-| Método | Ruta | Descripción | Status |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/health` | Estado del servidor | 200 |
-| `GET` | `/api/v1/artworks?page=1&limit=10` | Listado paginado con datos del artista | 200 |
-| `GET` | `/api/v1/artworks/:id` | Detalle de una obra por ID | 200 / 404 |
-| `POST` | `/api/v1/artworks` | Crear nueva obra | 201 / 400 / 409 |
-| `PUT` | `/api/v1/artworks/:id` | Actualizar obra existente | 200 / 400 / 404 |
-| `DELETE`| `/api/v1/artworks/:id` | Eliminar obra por ID | 204 / 404 |
-
-### Ejemplos de Petición
-
-#### Crear obra (`POST /api/v1/artworks`)
-```json
-{
-  "title": "La noche estrellada",
-  "inventoryCode": "MUS-ART-003",
-  "year": 1889,
-  "medium": "Óleo sobre lienzo",
-  "estimatedValue": 100000000,
-  "isExhibited": true,
-  "artistId": 2
-}
-```
-
-#### Actualizar obra (`PUT /api/v1/artworks/1`)
-```json
-{
-  "estimatedValue": 950000000,
-  "isExhibited": false
-}
-```
+### Obras de Arte (`/api/v1/obras` - Rutas Protegidas)
+* `GET /api/v1/obras` — Listar todas las obras registradas.
+* `GET /api/v1/obras/:id` — Consultar detalle de una obra por su ID.
+* `POST /api/v1/obras` — Registrar una nueva obra de arte.
+* `PATCH /api/v1/obras/:id` — Actualizar los datos de una obra.
+* `DELETE /api/v1/obras/:id` — Eliminar una obra del inventario.
 
 ---
 
-## 7. Capturas de Pantalla (Postman / Thunder Client)
+## 📸 4. Evidencias de Pruebas (Screenshots)
 
-### 1. GET — Listado Paginado (`/api/v1/artworks`)
-<img src="./0-assets/cap1.png" alt="GET Listado Paginado" width="100%" />
-
----
-
-### 2. GET — Detalle por ID (`/api/v1/artworks/:id`)
-<img src="./0-assets/cap2.png" alt="GET Detalle por ID" width="100%" />
+### 1. Registro Exitoso (`POST /api/v1/auth/register` → 201 Created)
+<img src="./0-assets/cap1.png" alt="Registro Exitoso" width="850" />
 
 ---
 
-### 3. POST — Crear Obra (`/api/v1/artworks`)
-<img src="./0-assets/cap3.png" alt="POST Crear Obra" width="100%" />
+### 2. Login con Cookies en la Respuesta (`POST /api/v1/auth/login` → 200 OK)
+<img src="./0-assets/cap2.png" alt="Login con Cookies" width="850" />
 
 ---
 
-### 4. PUT — Actualizar Obra (`/api/v1/artworks/:id`)
-<img src="./0-assets/cap4.png" alt="PUT Actualizar Obra" width="100%" />
+### 3. CRUD Completo del Recurso (5 Operaciones)
+
+#### 3.1. Crear Obra (`POST /api/v1/obras` → 201 Created)
+<img src="./0-assets/cap3.1.png" alt="Crear Obra" width="850" />
+
+#### 3.2. Listar Obras (`GET /api/v1/obras` → 200 OK)
+<img src="./0-assets/cap3.2.png" alt="Listar Obras" width="850" />
+
+#### 3.3. Detalle de Obra por ID (`GET /api/v1/obras/:id` → 200 OK)
+<img src="./0-assets/cap3.3.png" alt="Detalle de Obra por ID" width="850" />
+
+#### 3.4. Actualizar Obra (`PATCH /api/v1/obras/:id` → 200 OK)
+<img src="./0-assets/cap3.4.png" alt="Actualizar Obra" width="850" />
+
+#### 3.5. Eliminar Obra (`DELETE /api/v1/obras/:id` → 204 No Content)
+<img src="./0-assets/cap3.5.png" alt="Eliminar Obra" width="850" />
 
 ---
 
-### 5. DELETE — Eliminar Obra (`/api/v1/artworks/:id`)
-<img src="./0-assets/cap5.png" alt="DELETE Eliminar Obra" width="100%" />
+### 4. Acceso Protegido Sin Token (`GET /api/v1/obras` → 401 Unauthorized)
+<img src="./0-assets/cap4.png" alt="Acceso Sin Token" width="850" />
+
+---
+
+### 5. Refresh Token Exitoso con Rotación (`POST /api/v1/auth/refresh` → 200 OK)
+<img src="./0-assets/cap5.png" alt="Refresh Token Exitoso" width="850" />
+
+---
+
+### 6. Logout y Refresh Posterior (`POST /api/v1/auth/refresh` → 401 Unauthorized)
+
+#### 6.1. Cierre de Sesión (Logout → 200 OK)
+<img src="./0-assets/cap6.1.png" alt="Logout Exitoso" width="850" />
+
+#### 6.2. Intento de Refresh tras Logout (Bloqueado → 401 Unauthorized)
+<img src="./0-assets/cap6.2.png" alt="Refresh tras Logout da 401" width="850" />
