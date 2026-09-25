@@ -1,17 +1,17 @@
-# 🧪 Proyecto Semana 09: Testing de API REST — Museo de Arte
+#  Proyecto Semana 09: Testing de API REST — Museo de Arte
 
 Suite de pruebas integral para la API REST del dominio **Museo (Inventario de Obras de Arte)**. Implementa pruebas unitarias para la lógica de negocio en servicios con aislamiento mediante mocks, pruebas de integración completas para las rutas HTTP utilizando **Supertest** y **MongoDB Memory Server**, y alcanza una cobertura de código superior al **80%** con **Jest**.
 
 ---
 
-## 🏛️ 1. Dominio Asignado y Recurso Principal
+##  1. Dominio Asignado y Recurso Principal
 
 * **Dominio Asignado:** Museo de Arte
 * **Recurso Principal:** `Obras de Arte` (`/api/v1/obras` y `/api/v1/items`)
 * **Recurso de Usuarios:** `User` (`/api/v1/auth`)
 * **Base de Datos:** MongoDB (y MongoDB Memory Server para testing)
 
-### 📋 Especificaciones del Modelo de Obra de Arte
+###  Especificaciones del Modelo de Obra de Arte
 
 | Campo | Tipo | Requerido | Descripción / Reglas de Validación |
 | :--- | :--- | :---: | :--- |
@@ -27,7 +27,7 @@ Suite de pruebas integral para la API REST del dominio **Museo (Inventario de Ob
 
 ---
 
-## 🗂️ 2. Arquitectura y Estructura del Proyecto
+##  2. Arquitectura y Estructura del Proyecto
 
 ```
 src/
@@ -70,7 +70,7 @@ src/
 
 ---
 
-## 🧪 3. Suite de Pruebas Implementada
+##  3. Suite de Pruebas Implementada
 
 ### A. Unit Tests — Servicio de Obras de Arte (`__tests__/items.service.test.ts`)
 Pruebas unitarias en **aislamiento total** mockeando `items.repository.ts`:
@@ -122,7 +122,7 @@ Pruebas unitarias para el servicio de autenticación con mocks de `users.reposit
 
 ---
 
-## 📊 4. Criterios y Umbrales de Cobertura (Coverage)
+##  4. Criterios y Umbrales de Cobertura (Coverage)
 
 Configurados en [jest.config.ts](file:///c:/Users/JAVIER%20SEPULVEDA/OneDrive/Desktop/bc-expressjs%20dominio/jest.config.ts):
 
@@ -135,7 +135,7 @@ Configurados en [jest.config.ts](file:///c:/Users/JAVIER%20SEPULVEDA/OneDrive/De
 
 ---
 
-## 🚀 5. Comandos para Ejecutar la Suite de Pruebas
+##  5. Comandos para Ejecutar la Suite de Pruebas
 
 ```bash
 # 1. Instalar dependencias
@@ -153,14 +153,4 @@ pnpm test:coverage
 
 ---
 
-## ✅ Rúbrica de Evaluación Cumplida
 
-| Criterio | Puntos | Estado |
-| :--- | :---: | :---: |
-| Unit tests para `items.service.ts` (*happy path* + errores) | 25 pts | ✅ Cumplido |
-| Integration tests para `items.routes.ts` con MongoDB Memory Server | 25 pts | ✅ Cumplido |
-| Auth unit tests (`auth.service.test.ts`) | 15 pts | ✅ Cumplido |
-| Cobertura de código ≥ 80% en statements y lines | 15 pts | ✅ Cumplido |
-| Limpieza de estado con `clearMocks` y `afterEach` entre tests | 10 pts | ✅ Cumplido |
-| Adaptación completa al dominio asignado (**Museo / Obras de Arte** con campo **`año`**) | 10 pts | ✅ Cumplido |
-| **Total** | **100 pts** | **Excelente** |
