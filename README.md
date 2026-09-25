@@ -1,73 +1,99 @@
-# Proyecto Semana 01 - Procesador de Datos con Node.js
-## Descripción del proyecto
-Este proyecto consiste en crear un programa que permita organizar y procesar información de un museo mediante una herramienta de consola.
-El programa trabaja con un listado de obras de arte, donde se puede consultar información como la cantidad de obras registradas, cuáles se encuentran en exhibición, sus precios y las categorías disponibles.
-El objetivo de esta práctica es aprender a manejar información, procesarla y generar reportes con los datos obtenidos.
----
-# Dominio del proyecto: Museo
-## Recurso principal: Obras de Arte
-Para este proyecto se adaptó el recurso inicial llamado "Item" al dominio de un museo, cambiándolo por "Obra de Arte".
-Cada obra contiene información como:
-* Nombre de la obra.
-* Artista.
-* Categoría.
-* Precio.
-* Estado de exhibición.
-Las categorías utilizadas son:
-* Painting.
-* Sculpture.
----
-# Funcionamiento del programa
-El programa realiza las siguientes acciones:
-## Lectura de obras
-Carga la información de las obras desde un archivo donde se encuentran almacenados los datos del museo.
-## Resumen del catálogo
-Muestra información general de las obras:
-* Total de obras registradas.
-* Obras en exhibición.
-* Obras fuera de exhibición.
-* Precio promedio.
-* Obra con mayor precio.
-* Obra con menor precio.
-* Categorías disponibles.
-## Filtro por categoría
-Permite consultar las obras de una categoría específica utilizando un filtro.
-Ejemplo:
-```bash
-pnpm dev -- --category Painting
+# Proyecto Semana 08: API Segura con RBAC y Capas de Seguridad
+
+## 🎯 Objetivo
+
+Construir una API REST completamente segura que integre todas las capas de seguridad aprendidas en la semana: RBAC con roles, Helmet, CORS con whitelist, rate limiting diferenciado y sanitización de entradas — aplicadas a tu dominio asignado.
+
+## 📋 Tu Dominio Asignado
+
+**Dominio**: El instructor te asignará tu dominio al inicio del bootcamp.
+
+La API base de autenticación (auth, users) ya está implementada en el starter. Tu trabajo es:
+1. Adaptar el recurso principal a tu dominio
+2. Configurar correctamente las capas de seguridad
+3. Aplicar RBAC a las rutas que lo requieran
+
+## 🏗️ Arquitectura Base (ya en el starter)
+
 ```
-Esto muestra únicamente las obras pertenecientes a la categoría seleccionada.
-Si la categoría no existe, el programa muestra un mensaje indicando el error y las categorías disponibles.
-## Generación del reporte
-Después de procesar la información, el programa crea un archivo con los resultados obtenidos.
-El reporte se guarda en:
+src/
+├── config/
+│   └── security.ts     ← Helmet, CORS, rate limiters YA CONFIGURADOS
+├── models/
+│   ├── user.model.ts   ← YA IMPLEMENTADO
+│   └── item.model.ts   ← TODO: adaptar a tu dominio
+├── routes/
+│   ├── auth.routes.ts  ← YA IMPLEMENTADO
+│   ├── user.routes.ts  ← YA IMPLEMENTADO
+│   └── item.routes.ts  ← TODO: proteger con authMiddleware + requireRole
+├── controllers/
+│   ├── auth.controller.ts  ← YA IMPLEMENTADO
+│   └── item.controller.ts  ← TODO: implementar CRUD
+├── services/
+│   ├── auth.service.ts     ← YA IMPLEMENTADO
+│   └── item.service.ts     ← TODO: implementar lógica de negocio
+└── app.ts              ← Seguridad YA APLICADA (no modificar)
 ```
-output/report.json
-```
----
-# Ejecución del proyecto
-Instalar dependencias:
-```bash
-pnpm install
-```
-Ejecutar el programa:
-```bash
-pnpm dev
-```
-Ejecutar utilizando un filtro:
-```bash
-pnpm dev -- --category Painting
-```
-Comprobar compilación del proyecto:
-```bash
-pnpm build
-```
----
-# Resultado del proyecto
-El programa permite organizar la información de las obras de un museo, facilitando la consulta de datos y la generación de reportes a partir de la información almacenada.
----
-# Información de la actividad
-Programa: Node.js Fundamentals
-Proyecto: Semana 01 - Procesador de Datos con Node.js
-Dominio: Museo
-Recurso: Obras de Arte
+
+## ✅ Requisitos Funcionales
+
+### Recurso Principal (adaptar a tu dominio)
+
+- [ ] `GET /api/v1/items` — Listar recursos (público o autenticado según dominio)
+- [ ] `GET /api/v1/items/:id` — Ver detalle (público o autenticado)
+- [ ] `POST /api/v1/items` — Crear recurso (autenticado)
+- [ ] `PATCH /api/v1/items/:id` — Actualizar (autenticado + dueño O admin)
+- [ ] `DELETE /api/v1/items/:id` — Eliminar (solo admin)
+
+### RBAC
+
+- [ ] Rutas públicas: sin middleware de auth
+- [ ] Rutas de usuario: `authMiddleware` aplicado
+- [ ] Rutas de admin: `authMiddleware` + `requireRole('admin')`
+
+### Seguridad (YA configurada — verificar que funciona)
+
+- [ ] Headers de Helmet visibles en todas las respuestas
+- [ ] `RateLimit-Remaining` visibles en headers
+- [ ] CORS configurado con whitelist (no `*`)
+- [ ] NoSQL injection no afecta la API
+
+## 💡 Ejemplos de Adaptación por Dominio
+
+| Dominio | Recurso (`item`) | Campo único | Admin puede |
+|---------|-----------------|-------------|-------------|
+| Biblioteca | `book` | `isbn` | Agregar/eliminar libros |
+| Farmacia | `medicine` | `sku` | Gestionar inventario |
+| Gimnasio | `membership` | `memberCode` | Ver todos los miembros |
+| Restaurante | `dish` | `code` | Gestionar menú completo |
+| Hotel | `room` | `roomNumber` | Ver todas las reservas |
+
+## 🛠️ Entregables
+
+1. **API funcional** probada con Thunder Client / Postman
+   - Screenshots de cada endpoint incluyendo headers de seguridad
+   - Screenshot del header `X-Content-Type-Options: nosniff`
+   - Screenshot del 429 al superar rate limit en auth
+
+2. **README.md personalizado** con:
+   - Descripción de tu dominio y recurso principal
+   - Tabla de roles y permisos de tu API
+   - Lista de endpoints con método, ruta y acceso requerido
+
+3. **Código adaptado** al dominio:
+   - `item.model.ts` renombrado y con campos del dominio
+   - `item.controller.ts` con función descriptiva (ej. `getBooks`)
+   - Rutas protegidas con `requireRole` donde corresponde
+
+## 📊 Criterios de Evaluación
+
+Ver [rubrica-evaluacion.md](../../rubrica-evaluacion.md) — sección Producto.
+
+Puntos clave:
+- Helmet aplicado y headers visibles (10 pts)
+- RBAC funcional: 401 sin token, 403 con rol incorrecto, 200 con rol correcto (20 pts)
+- Rate limiting con 429 al exceder límite (10 pts)
+- CORS con whitelist, no `cors()` puro (10 pts)
+- NoSQL injection mitigado (10 pts)
+- Errores sin stack trace en producción (10 pts)
+- Dominio coherente y originalidad (10 pts)
