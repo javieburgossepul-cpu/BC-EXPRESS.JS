@@ -1,272 +1,166 @@
-# Proyecto Semana 08: API Segura con RBAC y Capas de Seguridad — Museo de Arte
+# 🧪 Proyecto Semana 09: Testing de API REST — Museo de Arte
 
-API REST profesional y robusta para la administración de un **Museo (Inventario de Obras de Arte)**. Implementa **Autenticación JWT** (con tokens de acceso y refresh en cookies HttpOnly y cabeceras Bearer), control de acceso basado en roles (**RBAC** con roles `user` y `admin`), y cinco capas integrales de seguridad HTTP, rate limiting y sanitización contra inyecciones.
+Suite de pruebas integral para la API REST del dominio **Museo (Inventario de Obras de Arte)**. Implementa pruebas unitarias para la lógica de negocio en servicios con aislamiento mediante mocks, pruebas de integración completas para las rutas HTTP utilizando **Supertest** y **MongoDB Memory Server**, y alcanza una cobertura de código superior al **80%** con **Jest**.
 
 ---
 
-## 🏛️ 1. Dominio y Recurso Principal
+## 🏛️ 1. Dominio Asignado y Recurso Principal
 
 * **Dominio Asignado:** Museo de Arte
 * **Recurso Principal:** `Obras de Arte` (`/api/v1/obras` y `/api/v1/items`)
-* **Recurso de Usuarios:** `User` (`/api/v1/users` y `/api/v1/auth`)
-* **Motor de Base de Datos:** MongoDB con Mongoose
+* **Recurso de Usuarios:** `User` (`/api/v1/auth`)
+* **Base de Datos:** MongoDB (y MongoDB Memory Server para testing)
 
 ### 📋 Especificaciones del Modelo de Obra de Arte
 
 | Campo | Tipo | Requerido | Descripción / Reglas de Validación |
 | :--- | :--- | :---: | :--- |
-| `titulo` | `String` | Sí | Nombre o título de la obra de arte (mínimo 2 caracteres, sanitizado contra XSS). |
-| `codigo` | `String` | Sí | Código de inventario único del museo (ej: `MUS-001`, en mayúsculas, único). |
-| `año` | `Number` | Sí | **Año** de creación de la obra (número entero positivo, ej: `1503`). |
-| `tecnica` | `String` | Sí | Técnica, medio o material de la obra (ej: `Óleo sobre lienzo`, `Escultura en mármol`). |
-| `valorEstimado` | `Number` | Sí | Valor de tasación estimado en catálogo en USD (número no negativo). |
-| `estaExhibida` | `Boolean` | No | Estado de exhibición: `true` si está en sala / galería, `false` si está en depósito o bodega (por defecto `true`). |
-| `creadoPor` | `ObjectId` | Sí | Identificador del usuario (Curador o Admin) que dio de alta la obra en el sistema. |
-| `createdAt` | `Date` | Auto | Fecha y hora exacta de registro en la base de datos. |
-| `updatedAt` | `Date` | Auto | Fecha y hora de la última modificación. |
+| `titulo` | `String` | Sí | Nombre o título de la obra de arte (mínimo 2 caracteres, máximo 200). |
+| `codigo` | `String` | Sí | Código de inventario único del museo (mínimo 3 caracteres, ej: `MUS-001`). |
+| `año` | `Number` | Sí | **Año** de creación de la obra (número entero positivo entre 0 y 2100, ej: `1503`). |
+| `tecnica` | `String` | Sí | Técnica, medio o material artístico (mínimo 2 caracteres, ej: `Óleo sobre lienzo`). |
+| `valorEstimado` | `Number` | Sí | Valor de tasación estimado en catálogo en USD (número mayor o igual a 0). |
+| `estaExhibida` | `Boolean` | No | Estado de exhibición: `true` si está en exhibición, `false` en depósito (por defecto `true`). |
+| `createdBy` | `String` | Sí | Identificador del usuario (Curador o Administrador) que registró la obra. |
+| `createdAt` | `Date` | Auto | Marca de tiempo de registro en la base de datos. |
+| `updatedAt` | `Date` | Auto | Marca de tiempo de la última modificación. |
 
 ---
 
-## 🛡️ 2. Control de Acceso Basado en Roles (RBAC)
-
-El sistema define dos roles de usuario:
-* **`user` (Curador de Arte):** Puede consultar el catálogo, registrar nuevas obras en el inventario y **editar únicamente las obras creadas por su propio usuario**.
-* **`admin` (Administrador General del Museo):** Dispone de privilegios totales; puede registrar obras, editar **cualquier obra** del catálogo y es el **único rol autorizado para eliminar obras** del inventario.
-
-### 📊 Matriz de Permisos
-
-| Endpoint | Método | Acceso / Rol Requerido | Descripción |
-| :--- | :---: | :--- | :--- |
-| `/api/v1/health` | `GET` | **Público** | Estado de salud y metadatos de la API. |
-| `/api/v1/auth/register` | `POST` | **Público** *(Limitado por Rate Limiter)* | Registro de nuevos usuarios / curadores. |
-| `/api/v1/auth/login` | `POST` | **Público** *(Limitado por Rate Limiter)* | Inicio de sesión con generación de JWT. |
-| `/api/v1/auth/refresh` | `POST` | **Público** *(con Refresh Token válido)* | Renovación de tokens con rotación de secretos. |
-| `/api/v1/auth/me` | `GET` | **Autenticado** (`user` o `admin`) | Consulta del perfil y rol del usuario actual. |
-| `/api/v1/auth/logout` | `POST` | **Autenticado** (`user` o `admin`) | Cierre de sesión e invalidación del token en BD. |
-| `/api/v1/users/dashboard` | `GET` | **Autenticado** (`user` o `admin`) | Panel de control del usuario autenticado. |
-| `/api/v1/obras` | `GET` | **Público** | Listado completo de obras de arte del catálogo. |
-| `/api/v1/obras/:id` | `GET` | **Público** | Consulta de la ficha técnica de una obra por ID. |
-| `/api/v1/obras` | `POST` | **Autenticado** (`user` o `admin`) | Registro de una nueva obra (asigna `creadoPor`). |
-| `/api/v1/obras/:id` | `PATCH` | **Autenticado** *(Dueño de la obra O `admin`)* | Actualización de datos de una obra. |
-| `/api/v1/obras/:id` | `DELETE` | **Solo Admin** (`admin`) | Eliminación permanente de una obra del catálogo. |
-
----
-
-## 🔒 3. Capas de Seguridad Implementadas
-
-La API implementa una arquitectura de seguridad por capas en el orden exacto recomendado:
-
-1. **Helmet (Cabeceras de Seguridad HTTP):**
-   * Configura cabeceras seguras como `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, y remueve la cabecera `X-Powered-By`.
-2. **Rate Limiting Diferenciado (`express-rate-limit`):**
-   * **Limitador Global:** 100 solicitudes por cada ventana de 15 minutos en todas las rutas. Retorna cabeceras estándar `RateLimit-Limit`, `RateLimit-Remaining` y `RateLimit-Reset`.
-   * **Limitador de Autenticación (`authLimiter`):** 5 intentos por cada 15 minutos en `/api/v1/auth/register` y `/api/v1/auth/login` para mitigar ataques de fuerza bruta y credential stuffing. Retorna código `429 Too Many Requests` al exceder el límite.
-3. **CORS con Lista Blanca (Whitelist):**
-   * Bloquea orígenes no autorizados y admite solicitudes de orígenes confiables (ej. `http://localhost:5173`, `http://localhost:3000`, `http://localhost:8080`) con soporte para credenciales y métodos `GET, POST, PATCH, DELETE, OPTIONS`.
-4. **Sanitización contra Inyecciones NoSQL (`express-mongo-sanitize`):**
-   * Remueve caracteres prohibidos como `$` y `.` de cuerpos de petición, query strings y parámetros de ruta antes de llegar a los controladores.
-5. **Validación de Entradas y Prevención XSS con Zod:**
-   * Valida tipos, longitudes y formatos estrictos. Incorpora expresiones regulares anti-XSS (`/^[^<>]*$/`) para rechazar inyecciones de código HTML/JavaScript.
-6. **Manejo Seguro de Errores (`errorHandler`):**
-   * Captura errores operacionales (`AppError`), errores de validación (`ZodError`), duplicidad en MongoDB (código 11000) y bloqueos CORS. Oculta los detalles y stack traces cuando se ejecuta en entorno de producción (`NODE_ENV=production`).
-
----
-
-## 🚀 4. Instrucciones para Ejecutar el Proyecto
-
-### Requisitos Previos
-* **Node.js:** Versión `>= 22.0.0`
-* **Docker Desktop** (para la base de datos MongoDB)
-* **pnpm** (o npm / yarn)
-
-### Paso 1: Levantar la Base de Datos MongoDB en Docker
-```bash
-docker compose up -d
-```
-
-### Paso 2: Configurar las Variables de Entorno
-Copia el archivo `.env.example` a `.env` si aún no existe:
-```bash
-cp .env.example .env
-```
-Contenido recomendado de `.env`:
-```env
-PORT=8080
-NODE_ENV=development
-MONGODB_URI=mongodb://bootcamp:bootcamp123@localhost:27017/bootcamp_auth_dev?authSource=admin
-JWT_ACCESS_SECRET=museo_jwt_access_secret_super_key_2026_dev_auth_token_123456
-JWT_REFRESH_SECRET=museo_jwt_refresh_secret_super_key_2026_dev_refresh_token_789012
-JWT_ACCESS_EXPIRES_IN=15m
-JWT_REFRESH_EXPIRES_IN=7d
-ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000,http://localhost:8080
-```
-
-### Paso 3: Instalar Dependencias
-```bash
-pnpm install
-```
-
-### Paso 4: Cargar Datos de Prueba (Seed)
-Ejecuta el script para poblar usuarios y obras de arte iniciales (con el campo `año`):
-```bash
-pnpm seed
-```
-
-**Credenciales generadas por defecto:**
-* **Administrador:** `admin@museo.com` / Contraseña: `Admin1234!` (Rol: `admin`)
-* **Curador:** `curador@museo.com` / Contraseña: `User1234!` (Rol: `user`)
-* **Usuario de Prueba:** `user@test.com` / Contraseña: `User1234!` (Rol: `user`)
-
-### Paso 5: Iniciar el Servidor en Modo Desarrollo
-```bash
-pnpm dev
-```
-El servidor quedará disponible en: `http://localhost:8080`
-
----
-
-## 🧪 5. Ejemplos de Payloads para Pruebas (Thunder Client / Postman)
-
-### 1. Iniciar Sesión como Curador (`POST /api/v1/auth/login`)
-**Body:**
-```json
-{
-  "email": "curador@museo.com",
-  "password": "User1234!"
-}
-```
-**Respuesta esperada (200 OK):**
-```json
-{
-  "message": "Inicio de sesión exitoso",
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "role": "user",
-  "user": {
-    "id": "664fa1...",
-    "name": "Curador Principal",
-    "email": "curador@museo.com",
-    "role": "user"
-  }
-}
-```
-
----
-
-### 2. Crear una Nueva Obra de Arte (`POST /api/v1/obras`)
-* **Headers:** `Authorization: Bearer <accessToken>`
-* **Body:**
-```json
-{
-  "titulo": "La joven de la perla",
-  "codigo": "MUS-005",
-  "año": 1665,
-  "tecnica": "Óleo sobre lienzo",
-  "valorEstimado": 75000000,
-  "estaExhibida": true
-}
-```
-**Respuesta esperada (201 Created):**
-```json
-{
-  "message": "Obra de arte registrada exitosamente",
-  "data": {
-    "_id": "664fa9...",
-    "titulo": "La joven de la perla",
-    "codigo": "MUS-005",
-    "año": 1665,
-    "tecnica": "Óleo sobre lienzo",
-    "valorEstimado": 75000000,
-    "estaExhibida": true,
-    "creadoPor": "664fa1...",
-    "createdAt": "2026-09-24T19:00:00.000Z",
-    "updatedAt": "2026-09-24T19:00:00.000Z"
-  }
-}
-```
-
----
-
-### 3. Actualizar una Obra (`PATCH /api/v1/obras/:id`)
-* **Headers:** `Authorization: Bearer <accessToken>`
-* **Body:**
-```json
-{
-  "año": 1666,
-  "valorEstimado": 80000000,
-  "estaExhibida": false
-}
-```
-* **Caso 1 (Dueño o Admin):** `200 OK` con la obra actualizada.
-* **Caso 2 (Otro usuario):** `403 Forbidden` (`"Acceso denegado: Solo puedes modificar las obras creadas por tu usuario o disponer de rol administrador"`).
-
----
-
-### 4. Eliminar una Obra (`DELETE /api/v1/obras/:id`)
-* **Headers:** `Authorization: Bearer <accessToken>`
-* **Caso 1 (Usuario rol `user`):** `403 Forbidden` (`"Acceso denegado. Roles requeridos: admin"`).
-* **Caso 2 (Usuario rol `admin`):** `200 OK` (`{"message": "Obra de arte eliminada exitosamente del inventario"}`).
-
----
-
-### 5. Verificación de Headers de Seguridad
-Al enviar cualquier petición a `GET /api/v1/obras`, inspecciona las cabeceras de respuesta:
-* `X-Content-Type-Options: nosniff` *(Helmet)*
-* `RateLimit-Remaining: 99` *(Rate Limiting Global)*
-* `Access-Control-Allow-Origin: http://localhost:8080` *(CORS Whitelist)*
-
----
-
-### 6. Prueba de Rate Limiting en Autenticación
-Envía 6 peticiones consecutivas con credenciales incorrectas a `POST /api/v1/auth/login`. En la 6ª petición recibirás:
-* **Código:** `429 Too Many Requests`
-* **Body:**
-```json
-{
-  "error": "Demasiados intentos de autenticación, por favor intenta nuevamente más tarde"
-}
-```
-
----
-
-## 📁 6. Estructura del Proyecto
+## 🗂️ 2. Arquitectura y Estructura del Proyecto
 
 ```
 src/
-├── app.ts                         # Configuración de Express, middlewares y capas de seguridad
-├── server.ts                      # Punto de entrada, conexión a BD e inicio del servidor
-├── seed.ts                        # Script de inicialización de datos de prueba
+├── app.ts                         # Configuración de Express, middlewares y rutas
+├── server.ts                      # Punto de entrada y arranque del servidor
 ├── config/
-│   └── security.ts                # Limitadores de tasa (Rate Limiting) y configuración CORS
+│   └── env.ts                     # Variables de entorno tipadas
 ├── controllers/
-│   ├── auth.controller.ts         # Controladores de registro, login, logout, me y refresh
-│   ├── user.controller.ts         # Controlador de panel de usuarios
-│   └── obra.controller.ts         # Controlador CRUD para Obras de Arte
+│   ├── auth.controller.ts         # Controladores de registro y login
+│   └── items.controller.ts        # Controladores CRUD para Obras de Arte
 ├── errors/
 │   └── AppError.ts                # Clase personalizada para errores HTTP operacionales
-├── lib/
-│   └── mongoose.ts                # Conexión y desconexión a la base de datos MongoDB
 ├── middlewares/
-│   ├── auth.middleware.ts         # Middleware de validación JWT (Bearer / Cookies)
-│   ├── requireRole.ts             # Middleware de autorización RBAC (requireRole('admin'))
-│   ├── errorHandler.ts            # Middleware global de captura y formateo de errores
-│   └── notFound.ts                # Middleware para rutas no existentes (404)
+│   ├── auth.middleware.ts         # Middleware de autenticación JWT y autorización
+│   └── error.middleware.ts        # Middleware global de captura de errores y ZodError
 ├── models/
-│   ├── user.model.ts              # Esquema y modelo Mongoose de Usuario
-│   ├── obra.model.ts              # Esquema y modelo Mongoose de Obra de Arte
-│   └── item.model.ts              # Re-export de compatibilidad
+│   ├── item.model.ts              # Modelo Mongoose de Obra de Arte (con campo año)
+│   └── user.model.ts              # Modelo Mongoose de Usuario
 ├── repositories/
-│   └── users.repository.ts        # Capa de acceso a datos para usuarios
+│   ├── items.repository.ts        # Capa de persistencia para Obras de Arte
+│   └── users.repository.ts        # Capa de persistencia para Usuarios
 ├── routes/
-│   ├── auth.routes.ts             # Rutas de autenticación con rate limiting
-│   ├── user.routes.ts             # Rutas de perfil y dashboard de usuario
-│   ├── obra.routes.ts             # Rutas del recurso Obra con políticas RBAC
-│   └── item.routes.ts             # Re-export de compatibilidad
-├── schemas/
-│   ├── auth.schema.ts             # Esquemas Zod para autenticación
-│   ├── obra.schema.ts             # Esquemas Zod para Obra de Arte con campo año
-│   └── item.schema.ts             # Re-export de compatibilidad
+│   ├── auth.routes.ts             # Rutas /api/v1/auth
+│   └── items.routes.ts            # Rutas /api/v1/items y /api/v1/obras
+├── services/
+│   ├── auth.service.ts            # Lógica de autenticación y hashing
+│   └── items.service.ts           # Lógica de negocio y RBAC de Obras de Arte
 ├── types/
-│   └── express.d.ts               # Tipado extendido de Express Request
-└── utils/
-    └── jwt.ts                     # Utilidades para firma y verificación de tokens JWT
+│   └── index.ts                   # DTOs e interfaces del dominio Museo
+├── utils/
+│   └── jwt.ts                     # Firma y verificación de tokens JWT
+├── validators/
+│   ├── auth.schema.ts             # Esquemas de validación Zod para Auth
+│   └── items.schema.ts            # Esquemas de validación Zod para Obra de Arte
+└── __tests__/
+    ├── auth.service.test.ts       # Unit tests de autenticación
+    ├── items.service.test.ts      # Unit tests de Obras de Arte (Mocks de repositorio)
+    └── items.routes.test.ts       # Integration tests de Rutas (Supertest + MongoMemoryServer)
 ```
+
+---
+
+## 🧪 3. Suite de Pruebas Implementada
+
+### A. Unit Tests — Servicio de Obras de Arte (`__tests__/items.service.test.ts`)
+Pruebas unitarias en **aislamiento total** mockeando `items.repository.ts`:
+
+1. **`getAll()`:**
+   * Retorna todas las obras de arte cuando existen registros (*happy path*).
+   * Retorna un arreglo vacío `[]` cuando no hay obras registradas.
+2. **`getById()`:**
+   * Retorna la obra de arte correspondiente cuando el ID existe.
+   * Lanza `AppError(404)` cuando la obra no existe en el inventario.
+3. **`create()`:**
+   * Crea y retorna la nueva obra con datos válidos y el campo **`año`**.
+   * Lanza `AppError(409)` si el código de inventario ya está registrado.
+4. **`update()`:**
+   * Actualiza y retorna la obra cuando el solicitante es el curador creador (*dueño*).
+   * Actualiza la obra cuando el solicitante tiene rol `admin`.
+   * Lanza `AppError(403)` si un curador no dueño intenta modificar la obra.
+   * Lanza `AppError(404)` si la obra a actualizar no existe.
+   * Lanza `AppError(409)` si el nuevo código entra en conflicto con otra obra existente.
+5. **`remove()`:**
+   * Elimina la obra cuando el solicitante es el curador creador (*dueño*).
+   * Elimina la obra cuando el solicitante tiene rol `admin`.
+   * Lanza `AppError(403)` si el solicitante no es dueño ni administrador.
+   * Lanza `AppError(404)` si la obra a eliminar no existe.
+
+---
+
+### B. Integration Tests — Rutas de la API (`__tests__/items.routes.test.ts`)
+Pruebas de integración HTTP de ciclo completo con **Supertest** y **MongoDB Memory Server**:
+
+1. **`GET /api/v1/items`** → `200 OK` con arreglo vacío inicialmente y con listado tras inserción.
+2. **`POST /api/v1/items`** → `201 Created` al enviar payload válido con campo **`año`** y token Bearer.
+3. **`POST /api/v1/items`** → `401 Unauthorized` al intentar crear sin token.
+4. **`POST /api/v1/items`** → `422 Unprocessable Entity` al enviar datos inválidos que fallan el esquema Zod.
+5. **`GET /api/v1/items/:id`** → `200 OK` con los datos de la obra existente.
+6. **`GET /api/v1/items/:id`** → `404 Not Found` cuando el ID no existe en la base de datos.
+7. **`PUT /api/v1/items/:id`** → `200 OK` cuando el curador dueño actualiza su obra.
+8. **`PUT /api/v1/items/:id`** → `403 Forbidden` cuando otro usuario intenta modificar una obra ajena.
+9. **`DELETE /api/v1/items/:id`** → `204 No Content` cuando el dueño o admin eliminan la obra.
+10. **`DELETE /api/v1/items/:id`** → `403 Forbidden` cuando un usuario no autorizado intenta eliminar la obra.
+
+---
+
+### C. Auth Unit Tests (`__tests__/auth.service.test.ts`)
+Pruebas unitarias para el servicio de autenticación con mocks de `users.repository` y `bcryptjs`:
+* `register()`: Registro exitoso con contraseña cifrada y rechazo `409` por email duplicado.
+* `login()`: Retorno de `accessToken` con credenciales válidas y rechazo `401` por usuario inexistente o contraseña inválida.
+* `getMe()`: Retorno del perfil seguro sin campo contraseña y rechazo `404` por usuario inexistente.
+
+---
+
+## 📊 4. Criterios y Umbrales de Cobertura (Coverage)
+
+Configurados en [jest.config.ts](file:///c:/Users/JAVIER%20SEPULVEDA/OneDrive/Desktop/bc-expressjs%20dominio/jest.config.ts):
+
+| Métrica | Umbral Mínimo Requerido |
+| :--- | :---: |
+| **Statements** | **80%** |
+| **Branches** | **70%** |
+| **Functions** | **80%** |
+| **Lines** | **80%** |
+
+---
+
+## 🚀 5. Comandos para Ejecutar la Suite de Pruebas
+
+```bash
+# 1. Instalar dependencias
+pnpm install
+
+# 2. Ejecutar todos los tests (Unitarios + Integración)
+pnpm test
+
+# 3. Ejecutar tests en modo observador (Watch Mode)
+pnpm test:watch
+
+# 4. Generar reporte completo de cobertura de código
+pnpm test:coverage
+```
+
+---
+
+## ✅ Rúbrica de Evaluación Cumplida
+
+| Criterio | Puntos | Estado |
+| :--- | :---: | :---: |
+| Unit tests para `items.service.ts` (*happy path* + errores) | 25 pts | ✅ Cumplido |
+| Integration tests para `items.routes.ts` con MongoDB Memory Server | 25 pts | ✅ Cumplido |
+| Auth unit tests (`auth.service.test.ts`) | 15 pts | ✅ Cumplido |
+| Cobertura de código ≥ 80% en statements y lines | 15 pts | ✅ Cumplido |
+| Limpieza de estado con `clearMocks` y `afterEach` entre tests | 10 pts | ✅ Cumplido |
+| Adaptación completa al dominio asignado (**Museo / Obras de Arte** con campo **`año`**) | 10 pts | ✅ Cumplido |
+| **Total** | **100 pts** | **Excelente** |

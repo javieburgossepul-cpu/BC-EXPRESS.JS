@@ -1,26 +1,27 @@
-import { Request, Response, NextFunction } from 'express';
-import { verifyAccessToken } from '../utils/jwt.js';
-import { AppError } from '../errors/AppError.js';
+import type { Request, Response, NextFunction } from 'express';
+import { AppError } from '../errors/AppError';
+import { verifyAccessToken } from '../utils/jwt';
 
-export function authMiddleware(req: Request, _res: Response, next: NextFunction): void {
-  let token: string | undefined;
-
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    token = authHeader.split(' ')[1];
-  } else if (req.cookies?.accessToken) {
-    token = req.cookies.accessToken as string;
+export function authenticate(req: Request, res: Response, next: NextFunction): void {
+  const authHeader = req.headers['authorization'];
+  if (!authHeader?.startsWith('Bearer ')) {
+    return next(new AppError(401, 'Authentication required'));
   }
-
-  if (!token) {
-    return next(new AppError(401, 'No autenticado — token no proporcionado'));
-  }
-
   try {
-    const decoded = verifyAccessToken(token);
-    req.user = decoded;
+    const payload = verifyAccessToken(authHeader.slice(7));
+    res.locals['user'] = payload;
     next();
   } catch {
-    next(new AppError(401, 'Token inválido o expirado'));
+    next(new AppError(401, 'Invalid or expired token'));
   }
+}
+
+export function authorize(...roles: string[]) {
+  return (_req: Request, res: Response, next: NextFunction): void => {
+    const user = res.locals['user'] as { role: string } | undefined;
+    if (!user || !roles.includes(user.role)) {
+      return next(new AppError(403, 'Insufficient permissions'));
+    }
+    next();
+  };
 }

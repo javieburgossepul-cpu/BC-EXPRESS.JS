@@ -1,22 +1,24 @@
-import { Schema, model, Document, Types } from 'mongoose';
+import mongoose, { Schema, Document } from 'mongoose';
 
-// =======================================================
+// ============================================================
 // MODELO DE OBRA DE ARTE (DOMINIO: MUSEO)
-// =======================================================
+// ============================================================
 
-export interface IObra extends Document {
+export interface IItem extends Document {
   titulo: string;
   codigo: string;
   año: number;
   tecnica: string;
   valorEstimado: number;
   estaExhibida: boolean;
-  creadoPor: Types.ObjectId | string;
+  createdBy: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-const obraSchema = new Schema<IObra>(
+export type IObra = IItem;
+
+const ItemSchema = new Schema<IItem>(
   {
     titulo: {
       type: String,
@@ -48,14 +50,22 @@ const obraSchema = new Schema<IObra>(
       type: Boolean,
       default: true,
     },
-    creadoPor: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
+    createdBy: {
+      type: String,
       required: [true, 'El usuario creador es requerido'],
     },
   },
   { timestamps: true }
 );
 
-export const Obra = model<IObra>('Obra', obraSchema);
-export const ObraModel = Obra;
+ItemSchema.pre('validate', function (next) {
+  if (this.año === undefined && (this as unknown as Record<string, unknown>)['anio'] !== undefined) {
+    this.año = (this as unknown as Record<string, unknown>)['anio'] as number;
+  }
+  next();
+});
+
+export const ItemModel = mongoose.model<IItem>('Item', ItemSchema);
+export const ObraModel = ItemModel;
+export const Item = ItemModel;
+export const Obra = ObraModel;
