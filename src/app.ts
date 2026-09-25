@@ -62,7 +62,6 @@ app.get('/health', (_req, res) => {
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/obras', obraRoutes);
-app.use('/api/v1/items', obraRoutes); // Alias de compatibilidad
 
 // =======================================================
 // MANEJO DE ERRORES (SIEMPRE AL FINAL)
