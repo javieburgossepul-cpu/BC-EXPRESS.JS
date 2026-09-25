@@ -24,7 +24,6 @@ app.use(helmet());
 app.use(globalLimiter);
 
 // 3. CORS con lista blanca (Whitelist)
-app.options('*', cors(corsOptions));
 app.use(cors(corsOptions));
 
 // 4. Procesamiento de cuerpo y cookies
