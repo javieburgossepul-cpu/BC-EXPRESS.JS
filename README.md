@@ -11,7 +11,7 @@ API REST profesional y robusta para la administración de un **Museo (Inventario
 * **Recurso de Usuarios:** `User` (`/api/v1/users` y `/api/v1/auth`)
 * **Motor de Base de Datos:** MongoDB con Mongoose
 
-### 📋 Especificaciones del Modelo de Obra de Arte
+###  Especificaciones del Modelo de Obra de Arte
 
 | Campo | Tipo | Requerido | Descripción / Reglas de Validación |
 | :--- | :--- | :---: | :--- |
@@ -27,13 +27,13 @@ API REST profesional y robusta para la administración de un **Museo (Inventario
 
 ---
 
-## 🛡️ 2. Control de Acceso Basado en Roles (RBAC)
+##  2. Control de Acceso Basado en Roles (RBAC)
 
 El sistema define dos roles de usuario:
 * **`user` (Curador de Arte):** Puede consultar el catálogo, registrar nuevas obras en el inventario y **editar únicamente las obras creadas por su propio usuario**.
 * **`admin` (Administrador General del Museo):** Dispone de privilegios totales; puede registrar obras, editar **cualquier obra** del catálogo y es el **único rol autorizado para eliminar obras** del inventario.
 
-### 📊 Matriz de Permisos
+### Matriz de Permisos
 
 | Endpoint | Método | Acceso / Rol Requerido | Descripción |
 | :--- | :---: | :--- | :--- |
@@ -52,7 +52,7 @@ El sistema define dos roles de usuario:
 
 ---
 
-## 🔒 3. Capas de Seguridad Implementadas
+##  3. Capas de Seguridad Implementadas
 
 La API implementa una arquitectura de seguridad por capas en el orden exacto recomendado:
 
@@ -72,7 +72,7 @@ La API implementa una arquitectura de seguridad por capas en el orden exacto rec
 
 ---
 
-## 🚀 4. Instrucciones para Ejecutar el Proyecto
+##  4. Instrucciones para Ejecutar el Proyecto
 
 ### Requisitos Previos
 * **Node.js:** Versión `>= 22.0.0`
@@ -125,7 +125,7 @@ El servidor quedará disponible en: `http://localhost:8080`
 
 ---
 
-## 🧪 5. Ejemplos de Payloads para Pruebas (Thunder Client / Postman)
+##  5. Ejemplos de Payloads para Pruebas (Thunder Client / Postman)
 
 ### 1. Iniciar Sesión como Curador (`POST /api/v1/auth/login`)
 **Body:**
@@ -228,7 +228,7 @@ Envía 6 peticiones consecutivas con credenciales incorrectas a `POST /api/v1/au
 
 ---
 
-## 📁 6. Estructura del Proyecto
+##  6. Estructura del Proyecto
 
 ```
 src/
