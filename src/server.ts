@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { app } from './app.js';
 import { connectDB } from './lib/mongoose.js';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { User } from './models/user.model.js';
 
 const PORT = Number(process.env.PORT) || 8080;

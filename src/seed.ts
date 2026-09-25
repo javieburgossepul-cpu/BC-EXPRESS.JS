@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { connectDB, disconnectDB } from './lib/mongoose.js';
 import { User } from './models/user.model.js';
 import { Obra } from './models/obra.model.js';
