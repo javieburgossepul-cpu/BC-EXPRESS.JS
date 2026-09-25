@@ -4,7 +4,7 @@ API REST profesional y robusta para la administración de un **Museo (Inventario
 
 ---
 
-## 🏛️ 1. Dominio y Recurso Principal
+##  1. Dominio y Recurso Principal
 
 * **Dominio Asignado:** Museo de Arte
 * **Recurso Principal:** `Obras de Arte` (`/api/v1/obras` y `/api/v1/items`)
