@@ -31,8 +31,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// 5. Sanitización contra inyecciones NoSQL
-app.use(mongoSanitize());
+// 5. Sanitización contra inyecciones NoSQL (Compatible con Express 5)
+app.use((req, _res, next) => {
+  if (req.body) mongoSanitize.sanitize(req.body);
+  if (req.params) mongoSanitize.sanitize(req.params);
+  if (req.query) mongoSanitize.sanitize(req.query);
+  next();
+});
 
 // =======================================================
 // ENDPOINTS DE SALUD (HEALTH CHECK)
