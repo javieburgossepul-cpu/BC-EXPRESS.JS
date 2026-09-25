@@ -1,22 +1,23 @@
 import { Router } from 'express';
-import * as obraController from '../controllers/obra.controller';
-import { authMiddleware } from '../middlewares/auth.middleware';
-
-// ============================================
-// RUTAS DE OBRAS DE ARTE (DOMINIO: MUSEO)
-// ============================================
-// Todas las rutas están protegidas con authMiddleware
-// ============================================
+import {
+  getObras,
+  getObraById,
+  createObra,
+  updateObra,
+  deleteObra,
+} from '../controllers/obra.controller.js';
+import { authMiddleware } from '../middlewares/auth.middleware.js';
+import { requireRole } from '../middlewares/requireRole.js';
 
 const router: Router = Router();
 
-// Middleware de autenticación para todas las operaciones de obras
-router.use(authMiddleware);
+// Rutas Públicas de catálogo
+router.get('/', getObras);
+router.get('/:id', getObraById);
 
-router.get('/', obraController.getAll);
-router.get('/:id', obraController.getById);
-router.post('/', obraController.create);
-router.patch('/:id', obraController.update);
-router.delete('/:id', obraController.remove);
+// Rutas Protegidas de gestión
+router.post('/', authMiddleware, createObra);
+router.patch('/:id', authMiddleware, updateObra);
+router.delete('/:id', authMiddleware, requireRole('admin'), deleteObra);
 
 export default router;

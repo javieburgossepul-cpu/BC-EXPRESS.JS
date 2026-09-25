@@ -1,12 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
-import { verifyAccessToken } from '../utils/jwt';
-import { AppError } from '../errors/AppError';
+import { verifyAccessToken } from '../utils/jwt.js';
+import { AppError } from '../errors/AppError.js';
 
-export function authMiddleware(req: Request, res: Response, next: NextFunction): void {
-  const token = req.cookies?.accessToken as string | undefined;
+export function authMiddleware(req: Request, _res: Response, next: NextFunction): void {
+  let token: string | undefined;
+
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  } else if (req.cookies?.accessToken) {
+    token = req.cookies.accessToken as string;
+  }
 
   if (!token) {
-    return next(new AppError(401, 'No autenticado — token no encontrado'));
+    return next(new AppError(401, 'No autenticado — token no proporcionado'));
   }
 
   try {

@@ -1,8 +1,8 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import { Schema, model, Document, Types } from 'mongoose';
 
-// ============================================
+// =======================================================
 // MODELO DE OBRA DE ARTE (DOMINIO: MUSEO)
-// ============================================
+// =======================================================
 
 export interface IObra extends Document {
   titulo: string;
@@ -11,7 +11,7 @@ export interface IObra extends Document {
   tecnica: string;
   valorEstimado: number;
   estaExhibida: boolean;
-  creadoPor: mongoose.Types.ObjectId;
+  creadoPor: Types.ObjectId | string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -57,4 +57,5 @@ const obraSchema = new Schema<IObra>(
   { timestamps: true }
 );
 
-export const ObraModel = mongoose.model<IObra>('Obra', obraSchema);
+export const Obra = model<IObra>('Obra', obraSchema);
+export const ObraModel = Obra;

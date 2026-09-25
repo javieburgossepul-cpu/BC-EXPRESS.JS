@@ -1,18 +1,12 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import { Schema, model, Document } from 'mongoose';
 
-// ============================================
-// MODELO DE USUARIO
-// ============================================
-// El rol por defecto es 'user'. Si tu dominio requiere
-// roles adicionales (ej: 'admin', 'librarian', 'pharmacist'),
-// agrégalos al enum de la propiedad role.
-// ============================================
+export type UserRole = 'user' | 'admin';
 
 export interface IUser extends Document {
+  name: string;
   email: string;
   password: string;
-  name: string;
-  role: 'user' | 'admin';
+  role: UserRole;
   refreshToken?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -20,6 +14,11 @@ export interface IUser extends Document {
 
 const userSchema = new Schema<IUser>(
   {
+    name: {
+      type: String,
+      required: [true, 'El nombre es requerido'],
+      trim: true,
+    },
     email: {
       type: String,
       required: [true, 'El email es requerido'],
@@ -30,12 +29,7 @@ const userSchema = new Schema<IUser>(
     password: {
       type: String,
       required: [true, 'La contraseña es requerida'],
-      select: false, // nunca se devuelve en queries por defecto
-    },
-    name: {
-      type: String,
-      required: [true, 'El nombre es requerido'],
-      trim: true,
+      select: false,
     },
     role: {
       type: String,
@@ -44,10 +38,11 @@ const userSchema = new Schema<IUser>(
     },
     refreshToken: {
       type: String,
-      select: false, // nunca se devuelve por defecto
+      select: false,
     },
   },
   { timestamps: true }
 );
 
-export const UserModel = mongoose.model<IUser>('User', userSchema);
+export const User = model<IUser>('User', userSchema);
+export const UserModel = User;

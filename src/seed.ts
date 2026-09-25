@@ -1,53 +1,68 @@
 import 'dotenv/config';
-import bcrypt from 'bcryptjs';
-import { connectDB, disconnectDB } from './lib/mongoose';
-import { UserModel } from './models/user.model';
-import { ObraModel } from './models/obra.model';
+import bcrypt from 'bcrypt';
+import { connectDB, disconnectDB } from './lib/mongoose.js';
+import { User } from './models/user.model.js';
+import { Obra } from './models/obra.model.js';
 
-async function seed(): Promise<void> {
-  await connectDB();
-  console.log('Iniciando seed para el dominio Museo...');
+export async function seedDatabase(): Promise<void> {
+  console.log('🌱 Iniciando carga de datos iniciales (Seed)...');
 
-  await ObraModel.deleteMany({});
-  await UserModel.deleteMany({});
-  console.log('Datos previos eliminados.');
+  // Hashear contraseñas
+  const passwordAdmin = await bcrypt.hash('Admin1234!', 10);
+  const passwordUser = await bcrypt.hash('User1234!', 10);
 
-  const hashedPassword = await bcrypt.hash('javier1234', 10);
-
-  const admin = await UserModel.create({
-    name: 'Administrador Museo',
-    email: 'admin@expressjs.com',
-    password: hashedPassword,
+  // Limpiar e insertar usuarios
+  await User.deleteMany({});
+  const adminUser = await User.create({
+    name: 'Administrador del Museo',
+    email: 'admin@museo.com',
+    password: passwordAdmin,
     role: 'admin',
   });
 
-  const curador = await UserModel.create({
-    name: 'Javier Sepúlveda',
-    email: 'javier@expressjs.com',
-    password: hashedPassword,
+  const curadorUser = await User.create({
+    name: 'Curador Principal',
+    email: 'curador@museo.com',
+    password: passwordUser,
     role: 'user',
   });
 
-  console.log('2 usuarios creados (admin@expressjs.com y javier@expressjs.com / javier1234).');
-
-  const obras = await ObraModel.create([
+  // Usuarios adicionales para pruebas genéricas
+  await User.create([
     {
-      titulo: 'La Gioconda',
+      name: 'Regular User',
+      email: 'user@test.com',
+      password: passwordUser,
+      role: 'user',
+    },
+    {
+      name: 'Admin Test',
+      email: 'admin@test.com',
+      password: passwordAdmin,
+      role: 'admin',
+    },
+  ]);
+
+  // Limpiar e insertar obras de arte (utilizando campo 'año')
+  await Obra.deleteMany({});
+  await Obra.insertMany([
+    {
+      titulo: 'La Gioconda (Mona Lisa)',
       codigo: 'MUS-001',
       año: 1503,
       tecnica: 'Óleo sobre tabla de álamo',
-      valorEstimado: 850000000,
+      valorEstimado: 860000000,
       estaExhibida: true,
-      creadoPor: curador._id,
+      creadoPor: curadorUser._id,
     },
     {
       titulo: 'La noche estrellada',
       codigo: 'MUS-002',
       año: 1889,
       tecnica: 'Óleo sobre lienzo',
-      valorEstimado: 120000000,
+      valorEstimado: 100000000,
       estaExhibida: true,
-      creadoPor: curador._id,
+      creadoPor: curadorUser._id,
     },
     {
       titulo: 'Guernica',
@@ -55,35 +70,38 @@ async function seed(): Promise<void> {
       año: 1937,
       tecnica: 'Óleo sobre lienzo',
       valorEstimado: 200000000,
-      estaExhibida: true,
-      creadoPor: admin._id,
-    },
-    {
-      titulo: 'Las Meninas',
-      codigo: 'MUS-004',
-      año: 1656,
-      tecnica: 'Óleo sobre lienzo',
-      valorEstimado: 350000000,
-      estaExhibida: true,
-      creadoPor: admin._id,
-    },
-    {
-      titulo: 'El nacimiento de Venus',
-      codigo: 'MUS-005',
-      año: 1485,
-      tecnica: 'Temple sobre lienzo',
-      valorEstimado: 95000000,
       estaExhibida: false,
-      creadoPor: curador._id,
+      creadoPor: adminUser._id,
+    },
+    {
+      titulo: 'El grito',
+      codigo: 'MUS-004',
+      año: 1893,
+      tecnica: 'Óleo, temple y pastel sobre cartón',
+      valorEstimado: 120000000,
+      estaExhibida: true,
+      creadoPor: adminUser._id,
     },
   ]);
 
-  console.log(`${obras.length} obras de arte creadas exitosamente.`);
-  await disconnectDB();
-  console.log('Seed completado.');
+  console.log('✅ Seed completado con éxito:');
+  console.log('   👤 Admin:   admin@museo.com / Admin1234! (o admin@test.com)');
+  console.log('   👤 Curador: curador@museo.com / User1234! (o user@test.com)');
+  console.log('   🎨 4 Obras de arte cargadas en el inventario con el campo año');
 }
 
-seed().catch((err) => {
-  console.error('Error en seed:', err);
-  process.exit(1);
-});
+async function run(): Promise<void> {
+  try {
+    await connectDB();
+    await seedDatabase();
+  } catch (error) {
+    console.error('❌ Error durante la ejecución del seed:', error);
+  } finally {
+    await disconnectDB();
+  }
+}
+
+// Ejecutar automáticamente si se llama como script
+if (process.argv[1] && process.argv[1].includes('seed')) {
+  run();
+}

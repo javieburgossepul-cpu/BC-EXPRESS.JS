@@ -1,98 +1,125 @@
-import bcrypt from 'bcryptjs';
-import { AppError } from '../errors/AppError';
-import * as usersRepository from '../repositories/users.repository';
-import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt';
-import { RegisterDto, LoginDto } from '../schemas/auth.schema';
-import { IUser } from '../models/user.model';
+import bcrypt from 'bcrypt';
+import { AppError } from '../errors/AppError.js';
+import * as usersRepository from '../repositories/users.repository.js';
+import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
+import type { RegisterDto, LoginDto } from '../schemas/auth.schema.js';
 
 const SALT_ROUNDS = 10;
-const COOKIE_ACCESS_MAX_AGE = 15 * 60 * 1000; // 15 minutos
-const COOKIE_REFRESH_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 días
 
-export interface TokenCookieOptions {
-  accessToken: string;
-  refreshToken: string;
-  accessMaxAge: number;
-  refreshMaxAge: number;
-}
-
-export async function register(dto: RegisterDto): Promise<IUser> {
+export async function register(dto: RegisterDto) {
   const existing = await usersRepository.findByEmail(dto.email);
-  if (existing) throw new AppError(409, 'El email ya está registrado');
+  if (existing) {
+    throw new AppError(409, 'El email ya está registrado');
+  }
 
   const hashedPassword = await bcrypt.hash(dto.password, SALT_ROUNDS);
-  return usersRepository.create({ ...dto, password: hashedPassword });
+  const user = await usersRepository.create({
+    name: dto.name,
+    email: dto.email,
+    password: hashedPassword,
+    role: dto.role ?? 'user',
+  });
+
+  return {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  };
 }
 
-export async function login(dto: LoginDto): Promise<TokenCookieOptions> {
+export async function login(dto: LoginDto) {
   const user = await usersRepository.findByEmailWithPassword(dto.email);
-
-  // Mismo mensaje para email no encontrado Y contraseña incorrecta
-  // — previene user enumeration attacks
-  if (!user) throw new AppError(401, 'Credenciales inválidas');
+  if (!user) {
+    throw new AppError(401, 'Credenciales inválidas');
+  }
 
   const isMatch = await bcrypt.compare(dto.password, user.password);
-  if (!isMatch) throw new AppError(401, 'Credenciales inválidas');
+  if (!isMatch) {
+    throw new AppError(401, 'Credenciales inválidas');
+  }
 
-  const payload = { sub: user._id.toString(), email: user.email, role: user.role };
+  const payload = {
+    sub: user._id.toString(),
+    email: user.email,
+    role: user.role,
+  };
+
   const accessToken = signAccessToken(payload);
-  const refreshToken = signRefreshToken({ sub: user._id.toString() });
+  const refreshToken = signRefreshToken(user._id.toString());
 
-  // Almacenar HASH del refresh token — nunca el token en claro
+  // Almacenar hash del refresh token para máxima seguridad
   const hashedRefresh = await bcrypt.hash(refreshToken, SALT_ROUNDS);
   await usersRepository.updateRefreshToken(user._id.toString(), hashedRefresh);
 
   return {
     accessToken,
     refreshToken,
-    accessMaxAge: COOKIE_ACCESS_MAX_AGE,
-    refreshMaxAge: COOKIE_REFRESH_MAX_AGE,
+    role: user.role,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
   };
 }
 
-export async function refresh(incomingToken: string): Promise<TokenCookieOptions> {
-  // 1. Verificar firma y expiración del refresh token
+export async function refreshTokens(incomingToken: string) {
   let payload: { sub: string };
   try {
-    payload = verifyRefreshToken(incomingToken) as { sub: string };
+    payload = verifyRefreshToken(incomingToken);
   } catch {
     throw new AppError(401, 'Refresh token inválido o expirado');
   }
 
-  // 2. Cargar usuario con su hash de refresh token
   const user = await usersRepository.findByIdWithTokens(payload.sub);
   if (!user || !user.refreshToken) {
-    throw new AppError(401, 'Sesión no válida');
+    throw new AppError(401, 'Sesión no válida o expirada');
   }
 
-  // 3. Comparar token recibido con hash almacenado
-  const isValid = await bcrypt.compare(incomingToken, user.refreshToken);
-  if (!isValid) throw new AppError(401, 'Refresh token no coincide');
+  // Verificar si coincide con el hash almacenado (o token plano si migrado)
+  const isValid = user.refreshToken.startsWith('$2')
+    ? await bcrypt.compare(incomingToken, user.refreshToken)
+    : user.refreshToken === incomingToken;
 
-  // 4. Rotar: generar nuevos tokens
-  const newPayload = { sub: user._id.toString(), email: user.email, role: user.role };
+  if (!isValid) {
+    throw new AppError(401, 'Refresh token no coincide o fue revocado');
+  }
+
+  const newPayload = {
+    sub: user._id.toString(),
+    email: user.email,
+    role: user.role,
+  };
+
   const newAccessToken = signAccessToken(newPayload);
-  const newRefreshToken = signRefreshToken({ sub: user._id.toString() });
+  const newRefreshToken = signRefreshToken(user._id.toString());
 
-  // 5. Guardar nuevo hash, invalidar el anterior
   const newHashedRefresh = await bcrypt.hash(newRefreshToken, SALT_ROUNDS);
   await usersRepository.updateRefreshToken(user._id.toString(), newHashedRefresh);
 
   return {
     accessToken: newAccessToken,
     refreshToken: newRefreshToken,
-    accessMaxAge: COOKIE_ACCESS_MAX_AGE,
-    refreshMaxAge: COOKIE_REFRESH_MAX_AGE,
   };
 }
 
+export const refresh = refreshTokens;
+
 export async function logout(userId: string): Promise<void> {
-  // Invalidar refresh token en la base de datos
-  await usersRepository.updateRefreshToken(userId, undefined);
+  await usersRepository.updateRefreshToken(userId, null);
 }
 
-export async function getMe(userId: string): Promise<IUser> {
+export async function getMe(userId: string) {
   const user = await usersRepository.findById(userId);
-  if (!user) throw new AppError(404, 'Usuario no encontrado');
-  return user;
+  if (!user) {
+    throw new AppError(404, 'Usuario no encontrado');
+  }
+  return {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  };
 }

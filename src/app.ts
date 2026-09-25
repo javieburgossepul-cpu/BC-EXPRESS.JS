@@ -1,32 +1,73 @@
+import 'dotenv/config';
 import express, { Application } from 'express';
 import cookieParser from 'cookie-parser';
-import authRouter from './routes/auth.routes';
-import obraRouter from './routes/obra.routes';
-import { errorHandler } from './middlewares/errorHandler';
-import { notFound } from './middlewares/notFound';
+import helmet from 'helmet';
+import cors from 'cors';
+import mongoSanitize from 'express-mongo-sanitize';
+import authRoutes from './routes/auth.routes.js';
+import userRoutes from './routes/user.routes.js';
+import obraRoutes from './routes/obra.routes.js';
+import { errorHandler } from './middlewares/errorHandler.js';
+import { notFound } from './middlewares/notFound.js';
+import { globalLimiter, corsOptions } from './config/security.js';
 
-export const app: Application = express();
+const app: Application = express();
 
+// =======================================================
+// CAPAS DE SEGURIDAD (EL ORDEN ES CRÍTICO)
+// =======================================================
+
+// 1. Headers de seguridad HTTP con Helmet
+app.use(helmet());
+
+// 2. Rate Limiting Global (100 solicitudes / 15 min)
+app.use(globalLimiter);
+
+// 3. CORS con lista blanca (Whitelist)
+app.options('*', cors(corsOptions));
+app.use(cors(corsOptions));
+
+// 4. Procesamiento de cuerpo y cookies
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Endpoint de salud
-app.get('/health', (_req, res) => {
+// 5. Sanitización contra inyecciones NoSQL
+app.use(mongoSanitize());
+
+// =======================================================
+// ENDPOINTS DE SALUD (HEALTH CHECK)
+// =======================================================
+app.get('/api/v1/health', (_req, res) => {
   res.json({
     status: 'ok',
     domain: 'Museo',
-    resource: 'Obras de Arte',
+    recurso: 'Obras de Arte',
     timestamp: new Date().toISOString(),
   });
 });
 
-// Rutas de autenticación
-app.use('/api/v1/auth', authRouter);
+app.get('/health', (_req, res) => {
+  res.json({
+    status: 'ok',
+    domain: 'Museo',
+    recurso: 'Obras de Arte',
+    timestamp: new Date().toISOString(),
+  });
+});
 
-// Rutas del recurso principal: Obras de Arte (Museo)
-app.use('/api/v1/obras', obraRouter);
-app.use('/api/v1/artworks', obraRouter);
+// =======================================================
+// RUTAS DE LA API
+// =======================================================
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/obras', obraRoutes);
+app.use('/api/v1/items', obraRoutes); // Alias de compatibilidad
 
-// Middlewares de manejo de errores
+// =======================================================
+// MANEJO DE ERRORES (SIEMPRE AL FINAL)
+// =======================================================
 app.use(notFound);
 app.use(errorHandler);
+
+export { app };

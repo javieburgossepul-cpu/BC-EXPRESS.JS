@@ -1,44 +1,71 @@
 import { z } from 'zod';
 
-// ============================================
-// ESQUEMAS DE VALIDACIÓN ZOD (OBRA DE ARTE)
-// ============================================
+// =======================================================
+// ESQUEMAS DE VALIDACIÓN ZOD (OBRAS DE ARTE - MUSEO)
+// =======================================================
 
-export const createObraSchema = z
-  .object({
-    titulo: z.string().min(2, 'El título debe tener al menos 2 caracteres'),
-    codigo: z.string().min(3, 'El código de inventario debe tener al menos 3 caracteres'),
-    año: z.number().int('El año debe ser un número entero').optional(),
-    anio: z.number().int('El año debe ser un número entero').optional(),
-    tecnica: z.string().min(2, 'La técnica debe tener al menos 2 caracteres'),
-    valorEstimado: z.number().nonnegative('El valor estimado no puede ser negativo'),
-    estaExhibida: z.boolean().default(true),
-  })
-  .transform((data) => ({
-    titulo: data.titulo,
-    codigo: data.codigo,
-    año: data.año ?? data.anio ?? 2026,
-    tecnica: data.tecnica,
-    valorEstimado: data.valorEstimado,
-    estaExhibida: data.estaExhibida,
-  }));
-
-export const updateObraSchema = z.object({
-  titulo: z.string().min(2).optional(),
-  codigo: z.string().min(3).optional(),
-  año: z.number().int().optional(),
-  anio: z.number().int().optional(),
-  tecnica: z.string().min(2).optional(),
-  valorEstimado: z.number().nonnegative().optional(),
-  estaExhibida: z.boolean().optional(),
-}).transform((data) => {
-  const res: Record<string, any> = { ...data };
-  if (data.anio !== undefined && data.año === undefined) {
-    res.año = data.anio;
-    delete res.anio;
-  }
-  return res;
+export const createObraSchema = z.object({
+  body: z.object({
+    titulo: z
+      .string()
+      .min(2, 'El título debe tener al menos 2 caracteres')
+      .max(200, 'El título no puede exceder 200 caracteres')
+      .regex(/^[^<>]*$/, 'El título no debe contener caracteres HTML'),
+    codigo: z
+      .string()
+      .min(3, 'El código debe tener al menos 3 caracteres')
+      .max(50, 'El código no puede exceder 50 caracteres')
+      .regex(/^[^<>]*$/, 'El código no debe contener caracteres HTML'),
+    año: z
+      .number()
+      .int('El año debe ser un número entero')
+      .min(0, 'El año no puede ser un número negativo')
+      .max(2100, 'El año no puede ser mayor a 2100'),
+    tecnica: z
+      .string()
+      .min(2, 'La técnica debe tener al menos 2 caracteres')
+      .max(200, 'La técnica no puede exceder 200 caracteres')
+      .regex(/^[^<>]*$/, 'La técnica no debe contener caracteres HTML'),
+    valorEstimado: z
+      .number()
+      .min(0, 'El valor estimado no puede ser negativo'),
+    estaExhibida: z.boolean().optional().default(true),
+  }),
 });
 
-export type CreateObraDto = z.infer<typeof createObraSchema>;
-export type UpdateObraDto = z.infer<typeof updateObraSchema>;
+export const updateObraSchema = z.object({
+  body: z.object({
+    titulo: z
+      .string()
+      .min(2, 'El título debe tener al menos 2 caracteres')
+      .max(200, 'El título no puede exceder 200 caracteres')
+      .regex(/^[^<>]*$/, 'El título no debe contener caracteres HTML')
+      .optional(),
+    codigo: z
+      .string()
+      .min(3, 'El código debe tener al menos 3 caracteres')
+      .max(50, 'El código no puede exceder 50 caracteres')
+      .regex(/^[^<>]*$/, 'El código no debe contener caracteres HTML')
+      .optional(),
+    año: z
+      .number()
+      .int('El año debe ser un número entero')
+      .min(0, 'El año no puede ser un número negativo')
+      .max(2100, 'El año no puede ser mayor a 2100')
+      .optional(),
+    tecnica: z
+      .string()
+      .min(2, 'La técnica debe tener al menos 2 caracteres')
+      .max(200, 'La técnica no puede exceder 200 caracteres')
+      .regex(/^[^<>]*$/, 'La técnica no debe contener caracteres HTML')
+      .optional(),
+    valorEstimado: z
+      .number()
+      .min(0, 'El valor estimado no puede ser negativo')
+      .optional(),
+    estaExhibida: z.boolean().optional(),
+  }),
+});
+
+export type CreateObraDto = z.infer<typeof createObraSchema>['body'];
+export type UpdateObraDto = z.infer<typeof updateObraSchema>['body'];

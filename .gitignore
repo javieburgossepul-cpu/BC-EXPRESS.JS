@@ -1,36 +1,6 @@
-# Dependencies
 node_modules/
-/.pnp
-.pnp.js
-
-# Build / Output
 dist/
-build/
-coverage/
-
-# Environment variables
 .env
-.env.*
-!.env.example
-
-# Logs
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# OS & Editor files
 .DS_Store
-Thumbs.db
-.vscode/
-.idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# Local test / scratch files
-requests.http
+*.log
+cookies.txt

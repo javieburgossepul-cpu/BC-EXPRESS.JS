@@ -1,30 +1,50 @@
-import { UserModel, IUser } from '../models/user.model';
-import { RegisterDto } from '../schemas/auth.schema';
+import { User, IUser } from '../models/user.model.js';
 
 export async function findByEmail(email: string): Promise<IUser | null> {
-  return UserModel.findOne({ email });
+  return User.findOne({ email });
 }
 
 export async function findByEmailWithPassword(email: string): Promise<IUser | null> {
-  // select: false en password requiere solicitarla explícitamente
-  return UserModel.findOne({ email }).select('+password');
+  return User.findOne({ email }).select('+password +refreshToken');
+}
+
+export async function findUserByEmail(email: string): Promise<IUser | null> {
+  return User.findOne({ email }).select('+password +refreshToken');
 }
 
 export async function findByIdWithTokens(id: string): Promise<IUser | null> {
-  return UserModel.findById(id).select('+password +refreshToken');
+  return User.findById(id).select('+password +refreshToken');
 }
 
 export async function findById(id: string): Promise<IUser | null> {
-  return UserModel.findById(id);
+  return User.findById(id);
 }
 
-export async function create(dto: RegisterDto): Promise<IUser> {
-  return UserModel.create(dto);
+export async function findUserById(id: string): Promise<IUser | null> {
+  return User.findById(id);
+}
+
+export async function create(data: {
+  name: string;
+  email: string;
+  password: string;
+  role?: 'user' | 'admin';
+}): Promise<IUser> {
+  return User.create(data);
+}
+
+export async function createUser(data: {
+  name: string;
+  email: string;
+  password: string;
+  role?: 'user' | 'admin';
+}): Promise<IUser> {
+  return User.create(data);
 }
 
 export async function updateRefreshToken(
   id: string,
-  hashedToken: string | undefined
+  hashedToken: string | null | undefined
 ): Promise<void> {
-  await UserModel.findByIdAndUpdate(id, { refreshToken: hashedToken ?? null });
+  await User.findByIdAndUpdate(id, { refreshToken: hashedToken ?? null });
 }

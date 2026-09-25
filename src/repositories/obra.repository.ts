@@ -1,45 +1,29 @@
-import { ObraModel, IObra } from '../models/obra.model';
-import { CreateObraDto, UpdateObraDto } from '../schemas/obra.schema';
-import mongoose from 'mongoose';
-
-// ============================================
-// REPOSITORIO DE OBRAS DE ARTE
-// ============================================
+import { Obra, IObra } from '../models/obra.model.js';
+import type { CreateObraDto, UpdateObraDto } from '../schemas/obra.schema.js';
 
 export async function findAll(): Promise<IObra[]> {
-  return ObraModel.find().populate('creadoPor', 'name email role').sort({ createdAt: -1 });
+  return Obra.find().sort({ createdAt: -1 });
 }
 
 export async function findById(id: string): Promise<IObra | null> {
-  return ObraModel.findById(id).populate('creadoPor', 'name email role');
+  return Obra.findById(id);
 }
 
 export async function findByCodigo(codigo: string): Promise<IObra | null> {
-  return ObraModel.findOne({ codigo: codigo.toUpperCase().trim() });
+  return Obra.findOne({ codigo: codigo.toUpperCase() });
 }
 
-export async function create(
-  data: CreateObraDto,
-  userId: string
-): Promise<IObra> {
-  const obra = await ObraModel.create({
+export async function create(data: CreateObraDto, userId: string): Promise<IObra> {
+  return Obra.create({
     ...data,
-    creadoPor: new mongoose.Types.ObjectId(userId),
+    creadoPor: userId,
   });
-  return (await obra.populate('creadoPor', 'name email role')) as IObra;
 }
 
-export async function updateById(
-  id: string,
-  data: UpdateObraDto
-): Promise<IObra | null> {
-  return ObraModel.findByIdAndUpdate(id, data, {
-    new: true,
-    runValidators: true,
-  }).populate('creadoPor', 'name email role');
+export async function updateById(id: string, data: UpdateObraDto): Promise<IObra | null> {
+  return Obra.findByIdAndUpdate(id, data, { new: true, runValidators: true });
 }
 
-export async function deleteById(id: string): Promise<boolean> {
-  const result = await ObraModel.findByIdAndDelete(id);
-  return result !== null;
+export async function deleteById(id: string): Promise<IObra | null> {
+  return Obra.findByIdAndDelete(id);
 }
